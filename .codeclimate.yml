@@ -1,0 +1,25 @@
+---
+engines:
+  bundler-audit:
+    enabled: true
+  duplication:
+    enabled: true
+    config:
+      languages:
+        - ruby
+    exclude_fingerprints: []
+  fixme:
+    enabled: true
+    exclude_fingerprints: []
+  rubocop:
+    enabled: true
+ratings:
+  paths:
+  - Gemfile.lock
+  - "**.inc"
+  - "**.rb"
+exclude_paths:
+  - "**.rvmrc"
+  - "**.swp"
+  - "**~"
+
