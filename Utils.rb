@@ -103,11 +103,11 @@ module Utils
 		0       =>  32
 	}
 	
-	def Utils.calc_mask(_l,_u)
-		if _l.nil? or _u.nil?
+	def Utils.calc_mask(l,u)
+		if l.nil? or u.nil?
 			raise "calc_mask() expects a lower and upper ip"
 		else
-			ipra = NetAddr.range(_l,_u)
+			ipra = NetAddr.range(l,u)
 			#puts ipra.class.to_s.cyan
 			#puts ipra.size.to_s.cyan
 		end
