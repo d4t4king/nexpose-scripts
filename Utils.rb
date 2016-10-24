@@ -114,7 +114,7 @@ module Utils
 		if @mbit_dict.include?(ipra.size)
 			return @mbit_dict[ipra.size]
 		else
-			raise "Bit size not in dictionary: #{ipra.size.to_s}".red
+			raise "Bit size not in dictionary: #{ipra.size}".red
 		end
 	end
 end
