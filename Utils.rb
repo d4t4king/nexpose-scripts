@@ -26,6 +26,7 @@ module Utils
 		16384   =>  18,
 		16380   =>  18,
 		8192    =>  19,
+		8188    =>  19,
 		6397    =>  19,
 		5118    =>  19,
 		4096    =>  20,
@@ -34,6 +35,7 @@ module Utils
 		2044    =>  21,
 		1024    =>  22,
 		1022    =>  22,
+		1021    =>  22,
 		1020    =>  22,
 		766     =>  22,
 		512     =>  23,
@@ -116,6 +118,38 @@ module Utils
 		else
 			raise "Bit size not in dictionary: #{ipra.size}".red
 		end
+	end
+
+	def Utils.hashize(cidr_ary)
+		tmp = Hash.new
+		cidr_ary.each do |c|
+			tmp[c.to_s] = c
+		end
+		return tmp
+	end
+
+	def Utils.cidrize(ipaddr_ary)
+		cidr_hsh = Hash.new
+		ipaddr_ary.each do |ex|
+			if ex.is_a?(Nexpose::IPRange)
+				if ex.to.nil?
+					lower = ex.from.to_s
+					upper = ex.from.to_s
+				else
+					lower = ex.from.to_s
+					upper = ex.to.to_s
+				end
+				bits = Utils.calc_mask(lower,upper)
+				cidr = NetAddr::CIDR.create("#{ex.from}/#{bits}")
+				cidr_hsh[cidr.to_s] = cidr unless cidr_hsh[cidr.to_s]
+			else
+				raise "Unexpected object class: #{ex.class}".red
+			end
+		end
+		one = NetAddr.merge(cidr_hsh.values.sort, :Objectify => true)
+		two = NetAddr.merge(one.sort, :Objectify => true)
+		three = NetAddr.merge(two.sort, :Objectify => true)
+		return Utils.hashize(three)
 	end
 end
 
