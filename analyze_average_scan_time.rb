@@ -7,15 +7,16 @@ require 'highline/import'
 include Nexpose
 
 default_host = 'localhost'
-default_port = 3780
-default_name = 'user'
+#default_port = 3780
+default_user = 'user'
 
 host = ask("Enter the server name (host) for Nexpose: ") { |q| q.default = default_host }
-port = ask("Enter the port for Nexpose: ") { |q| q.default = default_port }
+#port = ask("Enter the port for Nexpose: ") { |q| q.default = default_port.to_s }
 user = ask("Enter your username: ") { |q| q.default = default_user }
 pass = ask("Enter your password: ") { |q| q.echo = "*" }
   
-nsc = Connection.new(host, port, user, pass)
+#nsc = Connection.new(host, port, user, pass)
+nsc = Connection.new(host, user, pass)
 nsc.login  
 at_exit { nsc.logout }  
   
@@ -50,5 +51,8 @@ sites = nsc.list_sites
 scan_times.each do |id,time|
 	site_name = sites.find { |s| s.id == id.to_s.split(":")[0].to_i }.name
 	avg_time = '%.2f' % (time / scan_assets[id] / 60)
-	puts "#{site_name} : #{id} : Assets: #{scan_assets[id]} : Total: #{time} secs : Avg: #{avg_time} min/asset"
+	mm, ss = time.divmod(60)
+	hh, mm = mm.divmod(60)
+	dd,hh = hh.divmod(24)
+	puts "#{site_name} : #{id} : Assets: #{scan_assets[id]} : Total: #{dd} days, #{hh} hours, #{mm} mins, #{ss} secs : Avg: #{avg_time} min/asset"
 end
