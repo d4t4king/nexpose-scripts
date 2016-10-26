@@ -142,6 +142,8 @@ module Utils
 				bits = Utils.calc_mask(lower,upper)
 				cidr = NetAddr::CIDR.create("#{ex.from}/#{bits}")
 				cidr_hsh[cidr.to_s] = cidr unless cidr_hsh[cidr.to_s]
+			elsif ex.is_a?(NetAddr::CIDR)
+				cidr_hsh[ex.to_s] = ex unless cidr_hsh[ex.to_s]
 			else
 				raise "Unexpected object class: #{ex.class}".red
 			end
