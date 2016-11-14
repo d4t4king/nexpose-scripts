@@ -50,44 +50,36 @@ nsc.sites.each do |ss|
 			next
 		end
 		puts "#{site.name}".cyan.bold
-		print "#{er_ary.size}".green
-		puts " elements in expected range"
+		print "#{er_ary.size}".green.bold
+		puts " IP addresses in network definition."
+		gap_ary = er_ary
 		got_ary = Array.new
 		site.included_addresses.each do |ipr|
 			if ipr.from and ipr.to
-				diff = IPAddr.new(ipr.to).to_i - IPAddr.new(ipr.from).to_i
-				#oct_ary = ipr.from.to_s.split(".").slice(0..2)
-				#oct_str = oct_ary.join(".")
-				oct_str = ipr.from.to_s.split(".").slice(0..2).join(".")
-				#puts oct_str
-				if diff < 255
-					diff.times do |n|
-						got_ary.push("#{oct_str}.#{n}")
-						n += 1
-					end
-				else 
-					$stderr.puts "Diff is greater than or equal to 255. Jumping to CIDR enumeration. (#{ipr.from}-#{ipr.to} [#{diff}])".red.bold
-					bits = Utils.calc_mask(ipr.from,ipr.to)
-					nac = NetAddr::CIDR.create("#{ipr.from}/#{bits}")
-					#puts "A: #{ipr.from} - #{ipr.to} (#{IPAddr.new(ipr.to).to_i - IPAddr.new(ipr.from).to_i})"
-					#puts "B: #{nac.first} - #{nac.last} (#{bits})"
-					got_ary += nac.enumerate
-					#raise "Diff is greater than or equal to 255! (#{diff})\n#{ipr.from}-#{ipr.to}".red.bold
+				i = IPAddr.new(ipr.from.to_s)
+				until i.to_s == ipr.to.to_s
+					got_ary.push(i.to_s)
+					gap_ary.delete(i.to_s)
+					i = i.succ
 				end
 			elsif ipr.from and ipr.to.nil?
 				got_ary.push(ipr.from)
+				gap_ary.delete(ipr.from)
+			else
+				raise "Got unexpected object #{ipr.class}\n#{ipr.inspect}".red.bold
 			end
 		end
-		#pp got_ary
-		print "#{got_ary.size}".green
-		puts " elements in got range(s)"
-		gap_ary = Array.new
-		er_ary.each do |ip|
-			gap_ary.push(ip) if !got_ary.include?(ip)
+		print "#{got_ary.size}".green.bold
+		puts " IP addresses in explicit target definition."
+		#gap_ary = er_ary - got_ary
+		print "#{gap_ary.size}".green.bold
+		puts " IP addresses in omitted gaps."
+		octs = Array.new
+		gap_ary.each do |g|
+			part = g.split(".").slice(0..2).join('.')
+			octs.push(part) unless octs.include?(part)
 		end
-		print "#{gap_ary.size}".green 
-		puts " elements in gaps"
-		break
+		#pp gap_ary
+		#break
 	end
 end
-
