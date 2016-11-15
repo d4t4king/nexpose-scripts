@@ -3,6 +3,7 @@
 require 'pp'
 require 'colorize'
 require 'date'
+require 'nexpose'
 
 module ScanLog
 
@@ -113,7 +114,6 @@ class ScanLog::Log
 			if line =~ /\Ajava\./
 				in_error = true
 				errstr = line + "\n"
-				# java.nio.channels.WritePendingException
 				if line =~ /\Ajava\.(?:net|lang|io)\.(.*?): (.*)/
 					exc = $1 
 					msg = $2
@@ -129,6 +129,11 @@ class ScanLog::Log
 					else
 						@error_types[exc_str] += 1
 					end
+				# java.nio.channels.WritePendingException
+				# this SHOULD NOT match here, but it is for some strange reason.
+				# so throw it out
+				elsif line =~ /java\.nio\.channels\.(?:Read|Write)PendingException/
+					next
 				elsif line =~ /\Ajava\.(?:net|lang|io)\.(.*?)$/
 					exc = $1 
 					if @error_types[exc].nil?
@@ -171,6 +176,7 @@ class ScanLog::Log
 			next if line =~ /^\s+(?:[0-9a-zA-F]{2}\s)+.*/
 			# skip empty lines
 			next if line =~ /^\s*$/
+
 			e = ScanLog::Entry.new(line)
 
 			if @threads.include?(e.thread)
@@ -204,7 +210,17 @@ class ScanLog::Log
 				@unresolved.push(unres)
 			when /Excluding (?:address range|named host): (.*)/
 				ex = $1
-				@exclusions.push(ex)
+				if ex =~ /((?:\d+\.){3}\d+)\s*\-\s*((?:\d+\.){3}\d+)/
+					lower = $1
+					upper = $2
+					nipr = Nexpose::IPRange.new(lower,upper)
+					@exclusions.push(nipr)
+				elsif ex =~ /^[AaCc][CcFfGgHh]\d{5,6}(?:\.sempra\.com)?/
+					hn = Nexpose::HostName.new(ex)
+					@exclusions.push(hn)
+				else
+					@exclusions.push(ex)
+				end
 			end
 		end
 	end

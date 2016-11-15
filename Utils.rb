@@ -4,6 +4,7 @@ require 'nexpose'
 require 'colorize'
 require 'pp'
 require 'netaddr'
+require 'resolv'
 
 module Utils
 
@@ -141,9 +142,11 @@ module Utils
 				end
 				bits = Utils.calc_mask(lower,upper)
 				cidr = NetAddr::CIDR.create("#{ex.from}/#{bits}")
-				cidr_hsh[cidr.to_s] = cidr unless cidr_hsh[cidr.to_s]
+				cidr_hsh[cidr.to_s] = cidr unless cidr_hsh.has_key?(cidr.to_s)
 			elsif ex.is_a?(NetAddr::CIDR)
-				cidr_hsh[ex.to_s] = ex unless cidr_hsh[ex.to_s]
+				cidr_hsh[ex.to_s] = ex unless cidr_hsh.has_key?(ex.to_s)
+			elsif ex.is_a?(Nexpose::HostName)
+				# don't do anything
 			else
 				raise "Unexpected object class: #{ex.class}".red
 			end
