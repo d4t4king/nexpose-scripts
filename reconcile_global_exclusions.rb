@@ -7,7 +7,7 @@ require 'highline/import'
 require 'netaddr'
 require 'sqlite3'
 
-require_relative 'Utils.rb'
+require_relative 'utils'
 
 include Nexpose
 

@@ -8,7 +8,7 @@ require 'netaddr'
 require 'sqlite3'
 include Nexpose  
   
-require_relative 'Utils.rb'
+require_relative 'utils'
 
 default_host = 'localhost'
 default_user = 'user'
