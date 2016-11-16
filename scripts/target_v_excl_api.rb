@@ -60,7 +60,7 @@ site.included_addresses.each do |iaddr|
 	end
 	globex.each do |gex|
 		if gex.to.nil? == false
-			if gex.from < IPAddr.new(ip) and IPAddr.new(ip) < gex.to
+			if gex.from < IPAddr.new(ip.to_s) and IPAddr.new(ip.to_s) < gex.to
 				puts "Excluded: #{ip.to_s}".red.bold
 				ex_addrs += 1
 			end
