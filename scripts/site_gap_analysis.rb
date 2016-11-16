@@ -7,7 +7,7 @@ require 'highline/import'
 require 'netaddr'
 require 'ipaddr'
 
-require_relative 'utils'
+require_relative '../lib/utils'
 
 include Nexpose
 

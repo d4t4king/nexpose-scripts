@@ -7,7 +7,7 @@ require 'highline/import'
 require 'netaddr'
 include Nexpose  
   
-require_relative 'utils'
+require_relative '../lib/utils'
 
 default_host = 'localhost'
 default_user = 'user'

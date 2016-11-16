@@ -156,5 +156,14 @@ module Utils
 		three = NetAddr.merge(two.sort, :Objectify => true)
 		return Utils.hashize(three)
 	end
+
+	def Utils.sites2ids(conn)
+		s2i = Hash.new
+		ssums = conn.sites
+		ssums.each do |s|
+			s2i[s.name] = s.id unless s2i.has_key?(s.name)
+		end
+		return s2i
+	end
 end
 

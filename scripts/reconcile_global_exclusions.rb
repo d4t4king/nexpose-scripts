@@ -7,7 +7,7 @@ require 'highline/import'
 require 'netaddr'
 require 'sqlite3'
 
-require_relative 'utils'
+require_relative '../lib/utils'
 
 include Nexpose
 
