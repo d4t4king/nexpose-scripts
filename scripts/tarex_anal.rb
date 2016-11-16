@@ -6,8 +6,8 @@ require 'netaddr'
 require 'resolv'
 require 'nexpose'
 
-require_relative 'scanlog'
-require_relative 'utils'
+require_relative '../lib/scanlog'
+require_relative '../lib/utils'
 
 def show_wait_spinner(fps=10)
 	chars = %w[|/-\\]
