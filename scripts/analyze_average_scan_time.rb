@@ -9,11 +9,13 @@ include Nexpose
 default_host = 'localhost'
 #default_port = 3780
 default_user = 'user'
+default_file = "/tmp/scan_time_analysis.csv"
 
 host = ask("Enter the server name (host) for Nexpose: ") { |q| q.default = default_host }
 #port = ask("Enter the port for Nexpose: ") { |q| q.default = default_port.to_s }
 user = ask("Enter your username: ") { |q| q.default = default_user }
 pass = ask("Enter your password: ") { |q| q.echo = "*" }
+outfile = ask("Enter the path to write out the results: ") { |q| q.default = default_file }
   
 #nsc = Connection.new(host, port, user, pass)
 nsc = Connection.new(host, user, pass)
@@ -48,11 +50,16 @@ nsc.sites.each do |site|
 end
 
 sites = nsc.list_sites
-scan_times.each do |id,time|
-	site_name = sites.find { |s| s.id == id.to_s.split(":")[0].to_i }.name
-	avg_time = '%.2f' % (time / scan_assets[id] / 60)
-	mm, ss = time.divmod(60)
-	hh, mm = mm.divmod(60)
-	dd,hh = hh.divmod(24)
-	puts "#{site_name} : #{id} : Assets: #{scan_assets[id]} : Total: #{dd} days, #{hh} hours, #{mm} mins, #{ss} secs : Avg: #{avg_time} min/asset"
+File.open(outfile, 'w') do |f|
+	puts "Site Name,Site ID,Asset Count,Total Time (seconds),Total Time (Human),Average (min/asset)"
+	f.puts "Site Name,Site ID,Asset Count,Total Time (seconds),Total Time (Human),Average (min/asset)"
+	scan_times.each do |id,time|
+		site_name = sites.find { |s| s.id == id.to_s.split(":")[0].to_i }.name
+		avg_time = '%.2f' % (time / scan_assets[id] / 60)
+		mm, ss = time.divmod(60)
+		hh, mm = mm.divmod(60)
+		dd,hh = hh.divmod(24)
+		puts "#{site_name},#{id},Assets: #{scan_assets[id]},#{time},#{dd}d #{hh}:#{mm}:#{ss},#{avg_time}"
+		f.puts "#{site_name},#{id},#{scan_assets[id]},#{time},#{dd}d #{hh}:#{mm}:#{ss},#{avg_time}"
+	end
 end
