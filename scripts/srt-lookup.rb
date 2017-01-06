@@ -102,7 +102,7 @@ else
 				reg = reg.new_offset('-08:00')
 				unreg = unreg.new_offset('-08:00')
 				puts "#{check_ip} was first touched at " + reg.to_s.green + "."
-				puts "The scan of #{check_ip} finished at " + unreg.to_s.green + ".'
+				puts "The scan of #{check_ip} finished at " + unreg.to_s.green + "."
 				%x{/bin/rm -f scan.log scanlog-#{as.scan_id}.zip}
 			else
 				puts "(not found)".green
