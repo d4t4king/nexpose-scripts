@@ -16,6 +16,7 @@ Where:
 --help|-h			Displays this message then exists.
 --verbose|-v		Displays more output.
 --input|-i			Specifies the full path to the input file.
+--lookup|-l			Specify the IP to look up
 
 END
 	exit 0
@@ -25,11 +26,13 @@ opts = GetoptLong.new(
 	['--help', '-h', GetoptLong::NO_ARGUMENT ],
 	['--verbose', '-v', GetoptLong::NO_ARGUMENT ],
 	['--input', '-i', GetoptLong::REQUIRED_ARGUMENT ],
+	['--lookup', '-l', GetoptLong::REQUIRED_ARGUMENT ],
 )
 
 @help = false
 @verbose = false
 @input = ''
+@lookup = ''
 
 opts.each do |opt,arg|
 	case opt
@@ -39,6 +42,8 @@ opts.each do |opt,arg|
 		@verbose = true
 	when '--input'
 		@input = arg
+	when '--lookup'
+		@lookup = arg
 	else
 		Raise ArgumentError "Unrecognized argument. (#{opt})"
 	end
@@ -57,31 +62,28 @@ if @input.nil?
 	raise "You must specify a scan log to process.".red
 end
 
-puts "Got #{@input} as the input file." if @verbose
+if @lookup.nil?
+	usage
+	raise "You must specify an IP to lookup.".red
+end
 
+puts "Got #{@input} as the input file." if @verbose
+puts "Got #{@lookup} as the IP to look up." if @verbose
+
+print "Objectifying the log file...." if @verbose
 scan_log = ScanLog::Log.new(@input)
+puts "done." if @verbose
 
 if @verbose
-	scan_log.entries.each do |e|
-		next if e.message =~ /Loaded protocol helper:/
-		next if e.message =~ /^(.*)\s+ALIVE/
-		next if e.message =~ /^(.*)\s+DEAD/
-		next if e.message =~ /Unable to determine IP address for target: (.+)/
-		next if e.message =~ /Excluding (?:address range|named host): (.*)/
-		puts e.message.to_s.red.bold
-	end
+	puts "Processed #{scan_log.entry_count} entries."
+	puts "#{scan_log.target_count} targets."
+	puts "#{scan_log.unresolved_count} unresolved names."
+	puts "#{scan_log.dead_target_count} dead targets."
+	puts "#{scan_log.exclusions.size} exclusions."
 end
 
-puts "#{scan_log.entry_count} entries."
-puts "#{scan_log.thread_count} threads."
-puts "#{scan_log.site_count} sites."
-scan_log.sites.keys.each do |k|
-	puts "\t#{k}"
+scan_log.entries.each do |e|
+	if e.message =~ /#{@lookup}/
+		puts e.to_s
+	end
 end
-puts "#{scan_log.protocol_helpers.size} protocol helpers."
-puts "#{scan_log.error_count} errors."
-pp scan_log.error_types
-puts "#{scan_log.target_count} targets."
-puts "#{scan_log.unresolved_count} unresolved names."
-puts "#{scan_log.dead_target_count} dead targets."
-puts "#{scan_log.exclusions.size} exclusions."

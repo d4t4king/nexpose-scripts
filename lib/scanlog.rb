@@ -16,22 +16,35 @@ class ScanLog::Entry
 	attr_accessor :site
 	attr_accessor :message
 	attr_accessor :is_init_entry
+	attr_accessor :is_multiline_entry
 
 	def initialize(log_line)
 		@is_init_entry = false
 
 		parts = log_line.split(/ /)
 		begin
-			@datetime = DateTime.parse(parts.shift)
+			d = parts.shift
+			#puts d.to_s.cyan
+			@datetime = DateTime.parse(d)
 		rescue ArgumentError => ae
+			print "In ScanLog::Entry.initialize::ArgumentError: ".red
+			print "#{ae.message} ".magenta
+			#puts "|#{d}|".cyan
 			pp parts
+			exit 1
 		end
 		@loglevel = parts.shift.gsub(/[\[\]]/, "")
 		str = parts.join(" ")
 		parts = str.split(/[\[\]]/)
 		parts.shift if parts[0].empty? or parts[0] =~ /^\s+$/
 		@thread = parts.shift.gsub(/Thread: /, "").strip
-		parts.shift if parts[0].empty? or parts[0] =~ /^\s+$/
+		begin
+			parts.shift if parts[0].empty? or parts[0] =~ /^\s+$/
+		rescue NoMethodError => nme
+			print "In ScanLog::Entry.initialize::NoMethodError: ".red
+			pp parts
+			exit 1
+		end
 		site = parts.shift
 		if site == "Logging initialized."
 			# initialization entry
@@ -106,11 +119,46 @@ class ScanLog::Log
 		@unresolved = Array.new
 		@dead_targets = Array.new
 		@exclusions = Array.new
+		multiline = false
+		line_count = 0
 		
 		errstr = ''
 		in_error = false
+		sb = ''
 		File.open(file, 'r').each_line do |line|
 			line.chomp!
+			line.delete!("\C-M")
+			line.delete!("\C-@")
+			line_count += 1
+			# com.rapid7.plugin.vulnck.TestException
+			# com.rapid7.plugin.vulnck.TestException
+			# com.rapid7.net.cifs.CifsException
+			if line =~ /\Acom\.rapid7\.(?:plugin\.vulnck\.TestException|net\.cifs\.CifsException)/
+				in_error = true
+				errstr = line + "\n"
+				next
+			end
+			if line =~ /\Acom\.jcraft\.jsch\.JSchException/
+				in_error = true
+				errstr = line + "\n"
+				next
+			end
+			if line =~ /\Acom\.rapid7\.net\.NetException/
+				in_error = true
+				errstr = line + "\n"
+				next
+			end
+			if line =~ /\Aorg\.snmp4j\.MessageException\:/
+				in_error = true
+				errstr = line + "\n"
+				next
+			end
+			if line =~ /\AJess reported an error/
+				in_error = true
+				errstr = line + "\n"
+				next
+			end
+			
 			if line =~ /\Ajava\./
 				in_error = true
 				errstr = line + "\n"
@@ -151,6 +199,19 @@ class ScanLog::Log
 				errstr = line + "\n"
 				next
 			end
+			if line =~ /\,$/
+				multiline = true
+			end
+
+			if multiline
+				if line =~ /^\s*$/ or line =~ /^\s+\.\.\.\s*\d\d?\smore/
+					multiline = false
+					line = sb.to_s.chomp.strip
+				else
+					sb += " #{line}"
+					next
+				end
+			end	
 			if in_error 
 				case line 
 				when /^\s+Message: \w+/
@@ -172,6 +233,14 @@ class ScanLog::Log
 				end
 			end
 
+			next if line =~ /backdoor-CVE-2015-7755-check/
+			next if line =~ /[Pp]assword\:?/
+			# (none) login:
+			next if line =~ /\(none\)\s*login\:/
+			next if line =~ /^(?:[Ll]ogin|diag|manuf|db2(?:as|fenc1|inst1)|admin|root|guest|[Uu]ser|[Cc]isco|\%|enable)/
+			next if line =~ /^(pix|netrangr|SUNRTR|FreeBSD\/amd64)/
+			next if line =~ /^\|/
+			next if line =~ /\+\-+\+/
 			#    03 00 00 0B 06 E0 00 00  00 00 00                   ...........
 			next if line =~ /^\s+(?:[0-9a-zA-F]{2}\s)+.*/
 			# skip empty lines
