@@ -65,11 +65,15 @@ activeScans.each do |as|
 		print "\t\t#{addrs[0].from}-#{addrs[0].to} "
 		bits = Utils.calc_mask(addrs[0].from, addrs[0].to)
 		ipaddr = IPAddr.new("#{addrs[0].from}/#{bits}")
+		# if IP/range in scan range, 
 		if ipaddr === check_iprobj
 			puts "(#{ipaddr.to_range})".red
-			#print "Pulling scan log...."
-			#@nsc.export_scan(as.scan_id, "scanlog-#{as.scan_id}.zip")
-			#puts "done."
+			# export the scan log
+			print "Pulling scan log...."
+			@nsc.export_scan(as.scan_id, "scanlog-#{as.scan_id}.zip")
+			puts "done."
+			# objectify scan logg
+			# look for affected IP/range
 		else
 			puts "(not found)".green
 		end
@@ -78,7 +82,3 @@ activeScans.each do |as|
 	end
 end
 
-# if IP/range in scan range, 
-#	export the scan log
-#	objectify scan logg
-#	look for affected IP/range
