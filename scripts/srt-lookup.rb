@@ -52,33 +52,38 @@ end
 
 # pull the active scans from the API
 activeScans = @nsc.scan_activity()
-activeScans.each do |as|
-	#pp as
-	site_obj = Nexpose::Site.load(@nsc, as.site_id)
-	#pp site_obj
-	puts "Found #{as.status} scan for site: #{site_obj.name}"
-	puts "\tAbove scan started at #{as.start_time}"
-	puts "\tIncludes the following range(s):"
-	addrs = site_obj.included_scan_targets[:addresses]
-	# check for specified IP in scan ranges
-	if addrs.size == 1
-		print "\t\t#{addrs[0].from}-#{addrs[0].to} "
-		bits = Utils.calc_mask(addrs[0].from, addrs[0].to)
-		ipaddr = IPAddr.new("#{addrs[0].from}/#{bits}")
-		# if IP/range in scan range, 
-		if ipaddr === check_iprobj
-			puts "(#{ipaddr.to_range})".red
-			# export the scan log
-			print "Pulling scan log...."
-			@nsc.export_scan(as.scan_id, "scanlog-#{as.scan_id}.zip")
-			puts "done."
-			# objectify scan logg
-			# look for affected IP/range
+if activeScans.size == 0
+	puts "There are no active scans to check.".green
+else
+	puts "Found active scans."
+	activeScans.each do |as|
+		#pp as
+		site_obj = Nexpose::Site.load(@nsc, as.site_id)
+		#pp site_obj
+		puts "Found #{as.status} scan for site: #{site_obj.name}"
+		puts "\tAbove scan started at #{as.start_time}"
+		puts "\tIncludes the following range(s):"
+		addrs = site_obj.included_scan_targets[:addresses]
+		# check for specified IP in scan ranges
+		if addrs.size == 1
+			print "\t\t#{addrs[0].from}-#{addrs[0].to} "
+			bits = Utils.calc_mask(addrs[0].from, addrs[0].to)
+			ipaddr = IPAddr.new("#{addrs[0].from}/#{bits}")
+			# if IP/range in scan range, 
+			if ipaddr === check_iprobj
+				puts "(#{ipaddr.to_range})".red
+				# export the scan log
+				print "Pulling scan log...."
+				#@nsc.export_scan(as.scan_id, "scanlog-#{as.scan_id}.zip")
+				@nsc.download("https://#{@nsc.host}:3780/data/scan/log?scan-id=#{as.scan_id}", "./")
+				puts "done."
+				# objectify scan logg
+				# look for affected IP/range
+			else
+				puts "(not found)".green
+			end
 		else
-			puts "(not found)".green
+			puts "\tThere's more than one range....".yellow
 		end
-	else
-		puts "\tThere's more than one range....".yellow
 	end
 end
-
