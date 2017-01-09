@@ -110,7 +110,24 @@ else
 			#puts addrs[0].inspect.to_s.yellow
 			#puts check_iprobj.inspect.to_s.yellow.bold
 		else
-			puts "\tThere's more than one range....".yellow
+			puts "There's more than one range....".yellow
+			if addrs.size > 1 and addrs.size < 50
+				addrs.each do |addr|
+					if addr.is_a?(Nexpose::IPRange)
+						print "#{addr.from}-#{addr.to} "
+						retval = addr <=> check_iprobj
+						if retval == 0
+							puts "(#{addr})".red
+						else
+							puts "(not found)".green
+						end
+					elsif addr.is_a?(Nexpose::HostName)
+						puts "#{addr}".cyan
+					end
+				end
+			else
+				puts "More than 50 entries.  Too many to list.".yellow
+			end
 		end
 	end
 end
