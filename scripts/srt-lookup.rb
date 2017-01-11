@@ -80,69 +80,22 @@ else
 			#print " retval == #{retval} ".yellow
 			if retval == 0
 				puts "(#{addrs[0]})".red
-				# export the scan log
-				print "Pulling scan log...."
-				#@nsc.export_scan(as.scan_id, "scanlog-#{as.scan_id}.zip")
-				@nsc.download("https://#{@nsc.host}:3780/data/scan/log?scan-id=#{as.scan_id}", "scanlog-#{as.scan_id}.zip")
-				puts "done."
-				# objectify scan logg
-				output = %x{unzip scanlog-#{as.scan_id}.zip}
-				if (output.nil? == false) 
-					puts "Got output from unzip: #{output}".yellow
-					if output.split(/\n/).size >= 1
-						xtrax = Array.new
-						output.split(/\n/).each do |line|
-							line.chomp!
-							next if line =~ /Archive\:\s+scanlog\-\d+\.zip/
-							if line =~ /\s*inflating\:\s+?(.*scan\.log)\s*$/
-								xtract = $1
-								xtract.strip!
-								xtrax.push(xtract)
-							else 
-								raise "Output line didn't match: #{line}!".red
-							end
-						end
-					else
-						raise "There were 0 lines in the output.".red
+				completed = @nsc.completed_assets(as.scan_id)
+				#pp completed
+				completed.each do |c|
+					if c.ip =~ /#{check_ip}/
+						puts "IP found in completed assets #{c.ip}.".cyan
+						pp c
 					end
 				end
-				pp xtrax
-				ip_matched = false
-				xtrax.each do |log|
-					log = ScanLog::Log.new(log)
-					#reg = DateTime.new
-					reg = nil
-					#unreg = DateTime.new
-					unreg = nil
-					log.entries.each do |e|
-						# look for affected IP/range
-						if e.message =~ /#{check_ip}/
-							ip_matched = true
-							if e.message =~ /Registered\./
-								if e.datetime.is_a?(DateTime)
-									reg = e.datetime
-								else 
-									reg = DateTime.parse(e.datetime.to_s)
-								end
-							else
-								reg = e.datetime if reg.nil? == false and e.datetime < reg
-							end
-							#puts "#{e.datetime} :: #{e.message}"
-							unreg = DateTime.parse(e.datetime.to_s) if e.message =~ /Unregistered\./
-						elsif e.thread =~ /#{check_ip}/ and e.message =~ /Complete/
-							unreg = e.datetime
-						end
+				incompleted = @nsc.incomplete_assets(as.scan_id)
+				incompleted.each do |i|
+					if i.ip =~ /#{check_ip}/
+						puts "IP found in incomplete assets: #{i.ip}.".yellow
+						pp i
 					end
 				end
-				if ip_matched
-					reg = reg.new_offset('-08:00') unless reg.nil?
-					unreg = unreg.new_offset('-08:00') unless unreg.nil?
-					puts "#{check_ip} was first touched at " + reg.to_s.green + "."
-					puts "The scan of #{check_ip} finished at " + unreg.to_s.green + "."
-				else
-					puts "Specified IP (#{check_ip}) was not (yet) found in the active scan log.".yellow.bold
-				end
-				%x{/bin/rm -f *scan.log scanlog-#{as.scan_id}.zip}
+				#pp incompleted
 			else
 				puts "(not found)".green
 			end
