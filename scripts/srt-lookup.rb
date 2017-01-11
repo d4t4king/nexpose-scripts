@@ -63,6 +63,7 @@ else
 		#pp as
 		site_obj = Nexpose::Site.load(@nsc, as.site_id)
 		#pp site_obj
+		puts "Site ID: #{as.site_id}".yellow
 		puts "Found #{as.status} scan for site: #{site_obj.name}"
 		puts "Above scan started at #{as.start_time}"
 		puts "Includes the following range(s):"
@@ -85,25 +86,53 @@ else
 				@nsc.download("https://#{@nsc.host}:3780/data/scan/log?scan-id=#{as.scan_id}", "scanlog-#{as.scan_id}.zip")
 				puts "done."
 				# objectify scan logg
-				%x{unzip scanlog-#{as.scan_id}.zip}
-				log = ScanLog::Log.new("scan.log")
-				#reg = DateTime.new
-				reg = nil
-				#unreg = DateTime.new
-				unreg = nil
-				log.entries.each do |e|
-					if e.message =~ /#{check_ip}/
-						reg = DateTime.parse(e.datetime.to_s) if e.message =~ /Registered\./
-						#puts "#{e.datetime} :: #{e.message}"
-						unreg = DateTime.parse(e.datetime.to_s) if e.message =~ /Unregistered\./
+				output = %x{unzip scanlog-#{as.scan_id}.zip}
+				if (output.nil? == false) 
+					puts "Got output from unzip: #{output}".yellow
+					if output.split(/\n/).size >= 1
+						xtrax = Array.new
+						output.split(/\n/).each do |line|
+							line.chomp!
+							next if line =~ /Archive\:\s+scanlog\-\d+\.zip/
+							if line =~ /\s*inflating\:\s+?(.*scan\.log)\s*$/
+								xtract = $1
+								xtract.strip!
+								xtrax.push(xtract)
+							else 
+								raise "Output line didn't match: #{line}!".red
+							end
+						end
+					else
+						raise "There were 0 lines in the output.".red
 					end
 				end
-				# look for affected IP/range
-				reg = reg.new_offset('-08:00')
-				unreg = unreg.new_offset('-08:00')
-				puts "#{check_ip} was first touched at " + reg.to_s.green + "."
-				puts "The scan of #{check_ip} finished at " + unreg.to_s.green + "."
-				%x{/bin/rm -f scan.log scanlog-#{as.scan_id}.zip}
+				pp xtrax
+				ip_matched = false
+				xtrax.each do |log|
+					log = ScanLog::Log.new(log)
+					#reg = DateTime.new
+					reg = nil
+					#unreg = DateTime.new
+					unreg = nil
+					log.entries.each do |e|
+						# look for affected IP/range
+						if e.message =~ /#{check_ip}/
+							ip_matched = true
+							reg = DateTime.parse(e.datetime.to_s) if e.message =~ /Registered\./
+							#puts "#{e.datetime} :: #{e.message}"
+							unreg = DateTime.parse(e.datetime.to_s) if e.message =~ /Unregistered\./
+						end
+					end
+				end
+				if ip_matched
+					reg = reg.new_offset('-08:00')
+					unreg = unreg.new_offset('-08:00')
+					puts "#{check_ip} was first touched at " + reg.to_s.green + "."
+					puts "The scan of #{check_ip} finished at " + unreg.to_s.green + "."
+				else
+					puts "Specified IP (#{check_ip}) was not (yet) found in the active scan log.".yellow.bold
+				end
+				%x{/bin/rm -f *scan.log scanlog-#{as.scan_id}.zip}
 			else
 				puts "(not found)".green
 			end
