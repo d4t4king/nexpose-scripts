@@ -118,15 +118,25 @@ else
 						# look for affected IP/range
 						if e.message =~ /#{check_ip}/
 							ip_matched = true
-							reg = DateTime.parse(e.datetime.to_s) if e.message =~ /Registered\./
+							if e.message =~ /Registered\./
+								if e.datetime.is_a?(DateTime)
+									reg = e.datetime
+								else 
+									reg = DateTime.parse(e.datetime.to_s)
+								end
+							else
+								reg = e.datetime if reg.nil? == false and e.datetime < reg
+							end
 							#puts "#{e.datetime} :: #{e.message}"
 							unreg = DateTime.parse(e.datetime.to_s) if e.message =~ /Unregistered\./
+						elsif e.thread =~ /#{check_ip}/ and e.message =~ /Complete/
+							unreg = e.datetime
 						end
 					end
 				end
 				if ip_matched
-					reg = reg.new_offset('-08:00')
-					unreg = unreg.new_offset('-08:00')
+					reg = reg.new_offset('-08:00') unless reg.nil?
+					unreg = unreg.new_offset('-08:00') unless unreg.nil?
 					puts "#{check_ip} was first touched at " + reg.to_s.green + "."
 					puts "The scan of #{check_ip} finished at " + unreg.to_s.green + "."
 				else
