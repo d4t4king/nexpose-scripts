@@ -4,8 +4,8 @@ GEM
     colorize (0.8.1)
     highline (1.7.8)
     netaddr (1.5.1)
-    nexpose (5.1.0)
-    rake (11.3.0)
+    nexpose (7.0.0)
+    rake (12.0.0)
 
 PLATFORMS
   ruby
@@ -18,4 +18,4 @@ DEPENDENCIES
   rake
 
 BUNDLED WITH
-   1.12.4
+   1.12.5
