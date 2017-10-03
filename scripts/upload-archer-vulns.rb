@@ -9,7 +9,6 @@ default_host = 'is-vmcrbn-p01***REMOVED***'
 #default_port = 3780
 default_user = 'ad-cheselto'
 default_format = 'pdf'
-default_host_list = '/tmp/host.list'
 default_vuln_list = '/tmp/vuln.list'
 
 host = ask("Enter the server name (host) for Nexpose: ") { |q| q.default = default_host }
