@@ -15,24 +15,14 @@ default_vuln_list = '/tmp/vuln.list'
 host = ask("Enter the server name (host) for Nexpose: ") { |q| q.default = default_host }
 user = ask("Enter your username to log on: ") { |q| q.default = default_user }
 pass = ask("Enter your password: ") { |q| q.echo = "*" }
-hosts_file = ask("Enter the filename that contains the list of hosts to scan: ") { |q| q.default = default_host_list }
 vulns_file = ask("Enter the filename that contains the list of vulns to process: ") { |q| q.default = default_vuln_list }
 
 @nsc = Nexpose::Connection.new(host, user, pass)
 @nsc.login
 at_exit { @nsc.logout }
 
-hosts = Array.new
 vulns = Array.new
 
-f = File.open(hosts_file)
-f.each_line do |line|
-	line.chomp!
-	if !hosts.include?(line)
-		hosts << line
-	end
-end
-f.close
 f = File.open(vulns_file)
 f.each_line do |line|
 	line.chomp!
@@ -61,32 +51,25 @@ vulns.each do |vt|
 	end
 end
 
-pp vuln_ids
+#pp vuln_ids
 
-names = Array.new
+egrc_templ_id = nil
 @nsc.scan_templates.each do |st|
-	puts "ID: #{st.id} Name: #{st.name}"
-	if !names.include?(st.name)
-		names << st.name
+	if st.name == 'Archer_Imported_vulns'
+		puts "ID: #{st.id} Name: #{st.name}"
+		egrc_templ_id = st.id
+		break
 	end
 end
 
 ### create the scan template with the desired vuln checks.
-template = Nexpose::ScanTemplate.load(@nsc)
-#if names.include?("archer_filtered_scan_test")
-	salt = 1 + rand(99999)
-#	puts "Default scan name exists. Using salt #{salt}"
-	template.name = "archer_filtered_scan_test_#{salt}"
-#else 
-#	template.name = "archer_filtered_scan_test"
-#end
-template.description = "Vulnerability scan for specific vulns and hosts for import into Archer"
+template = Nexpose::ScanTemplate.load(@nsc, egrc_templ_id)
 vuln_ids.uniq.each do |vuln|
 	puts vuln.to_s.magenta
 	template.enable_vuln_check(vuln)
 end
-template.web_spidering = false
-template.policy_scanning = false
+#template.web_spidering = false
+#template.policy_scanning = false
 begin
 	template.save(@nsc)
 rescue Exception => e
@@ -99,6 +82,9 @@ rescue Exception => e
 	end
 end
 
+exit 0
+
+=begin
 puts template.name
 site_obj = Nexpose::Site.new("charlie_archer_import_#{salt}", template.name)
 site_obj.description = "scan to process filtered results from another scan"
@@ -122,4 +108,5 @@ data = adhoc.generate(@nsc)
 File.open("/tmp/site-#{site_obj.id}-scan-#{scan_data.id}-scap.xml", 'w') { |f| f.write(data) }
 puts "done."
 puts "Your report has been saved to /tmp/site-#{site_obj.id}-scan-#{scan_data.id}-scap.xml"
+=end
 
