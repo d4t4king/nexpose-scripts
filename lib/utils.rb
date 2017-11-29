@@ -8,6 +8,63 @@ require 'resolv'
 
 module Utils
 
+	def self.get_mask(size)
+		case size
+		when 8388609..16777216 then
+			return 8
+		when 4194305..8388608 then
+			return 9
+		when 2097153..14194304 then
+			return 10
+		when 1048577..2097152 then
+			return 11
+		when 524289..1048576 then
+			return 12
+		when 262145..524288 then
+			return 13
+		when 131073..262144 then
+			return 14
+		when 65536..131072 then
+			return 15
+		when 32768..65536 then
+			return 16
+		when 16385..32768 then
+			return 17
+		when 8193..16384 then
+			return 18
+		when 4097..8192 then
+			return 19
+		when 2049..4096 then
+			return 20
+		when 1025..2048 then
+			return 21
+		when 513..1024 then
+			return 22
+		when 257..512 then
+			return 23
+		when 129..256 then
+			return 24
+		when 65..128 then
+			return 25
+		when 33..64 then
+			return 26
+		when 17..32 then
+			return 27
+		when 9..16 then
+			return 28
+		when 5..8 then
+			return 29
+		when 3..4 then
+			return 30
+		when 1..2 then 
+			return 31
+		when 0 then
+			return 32
+		else
+			raise ArgumentError, "Do not recognize this size: #{size}"
+		end
+	end
+
 	@mbit_dict = {
 		8388608 =>  9,
 		8388607 =>  9,
@@ -23,6 +80,8 @@ module Utils
 		262144  =>  14,
 		262140  =>  14,
 		65536   =>  16,
+		65535   =>  16,
+		65534   =>  16,
 		65532   =>  16,
 		16384   =>  18,
 		16380   =>  18,
@@ -118,11 +177,13 @@ module Utils
 			#puts ipra.class.to_s.cyan
 			#puts ipra.size.to_s.cyan
 		end
-		if @mbit_dict.include?(ipra.size)
-			return @mbit_dict[ipra.size]
-		else
-			raise "Bit size not in dictionary: #{ipra.size}".red
-		end
+
+		return self.get_mask(ipra.size)
+		#if @mbit_dict.include?(ipra.size)
+		#	return @mbit_dict[ipra.size]
+		#else
+		#	raise "Bit size not in dictionary: #{ipra.size}".red
+		#end
 	end
 
 	def Utils.hashize(cidr_ary)
