@@ -48,7 +48,7 @@ gexcl.each do |ipr|
 			break
 		end
 	end
-end	
+end
 unless is_global_exclusion
 	puts "#{check_ip} was NOT found in the Global Exclusion list.".red
 end
@@ -63,6 +63,7 @@ else
 		#pp as
 		site_obj = Nexpose::Site.load(@nsc, as.site_id)
 		#pp site_obj
+		puts "Site ID: #{as.site_id}".yellow
 		puts "Found #{as.status} scan for site: #{site_obj.name}"
 		puts "Above scan started at #{as.start_time}"
 		puts "Includes the following range(s):"
@@ -74,7 +75,7 @@ else
 			#put s"[*] Got bits #{bits} for range #{addrs[0].from}-#{addrs[0].to}".yellow
 			#ipaddr = IPAddr.new("#{addrs[0].from}/#{bits}")
 			#pp ipaddr
-			# if IP/range in scan range, 
+			# if IP/range in scan range,
 			retval = addrs[0] <=> check_iprobj
 			#print " retval == #{retval} ".yellow
 			if retval == 0
@@ -117,6 +118,22 @@ else
 					puts "The scan of #{check_ip} finished at " + unreg.to_s.green + "."
 				end
 				%x{/bin/rm -f *scan.log scanlog-#{as.scan_id}.zip}
+				completed = @nsc.completed_assets(as.scan_id)
+				#pp completed
+				completed.each do |c|
+					if c.ip =~ /#{check_ip}/
+						puts "IP found in completed assets #{c.ip}.".cyan
+						pp c
+					end
+				end
+				incompleted = @nsc.incomplete_assets(as.scan_id)
+				incompleted.each do |i|
+					if i.ip =~ /#{check_ip}/
+						puts "IP found in incomplete assets: #{i.ip}.".yellow
+						pp i
+					end
+				end
+				#pp incompleted
 			else
 				puts "(not found)".green
 			end
