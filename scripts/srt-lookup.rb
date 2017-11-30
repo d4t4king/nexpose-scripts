@@ -91,19 +91,32 @@ else
 				reg = nil
 				#unreg = DateTime.new
 				unreg = nil
+				lines_found = Array.new
 				log.entries.each do |e|
 					if e.message =~ /#{check_ip}/
 						reg = DateTime.parse(e.datetime.to_s) if e.message =~ /Registered\./
 						#puts "#{e.datetime} :: #{e.message}"
 						unreg = DateTime.parse(e.datetime.to_s) if e.message =~ /Unregistered\./
+						lines_found.push(e.to_s)
 					end
 				end
 				# look for affected IP/range
-				reg = reg.new_offset('-08:00')
-				unreg = unreg.new_offset('-08:00')
-				puts "#{check_ip} was first touched at " + reg.to_s.green + "."
-				puts "The scan of #{check_ip} finished at " + unreg.to_s.green + "."
-				%x{/bin/rm -f scan.log scanlog-#{as.scan_id}.zip}
+				if reg.nil? and unreg.nil?
+					puts "Unable to find register/unregister for IP (#{check_ip})".yellow
+					pp lines_found
+				else
+					if reg.nil?
+						reg = DateTime.new(1970,1,1,0,0,0)
+					end
+					if unreg.nil?
+						unreg = DateTime.new(1970,1,1,0,0,0)
+					end
+					reg = reg.new_offset('-08:00')
+					unreg = unreg.new_offset('-08:00')
+					puts "#{check_ip} was first touched at " + reg.to_s.green + "."
+					puts "The scan of #{check_ip} finished at " + unreg.to_s.green + "."
+				end
+				%x{/bin/rm -f *scan.log scanlog-#{as.scan_id}.zip}
 			else
 				puts "(not found)".green
 			end
