@@ -26,6 +26,9 @@ def show_wait_spinner(fps=10)
 	}					# Use the block's value as the method's
 end
 
+if ARGV[0].nil?
+	raise "Requires a scan log to analyze"
+end
 #sl = ''
 #show_wait_spinner(30){
 	sl = ScanLog::Log.new(ARGV[0])
