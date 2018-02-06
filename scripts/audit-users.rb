@@ -20,5 +20,11 @@ pass = ask("Enter your password: ") { |q| q.echo = "*" }
 at_exit { @nsc.logout }
 
 @nsc.list_users.each do |user|
-	pp rpt
+	puts "=" * 72
+	pp user
+	puts "=" * 72
+	fquser = Nexpose::User.load(@nsc, user.id)
+	pp fquser
+	puts "=" * 72
+	break
 end
