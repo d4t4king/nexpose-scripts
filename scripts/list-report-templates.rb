@@ -7,7 +7,7 @@ require 'highline/import'
 
 default_host = 'is-vmcrbn-p01***REMOVED***'
 #default_port = 3780
-default_user = 'ad-cheselto'
+default_user = 'sv-nexposegem'
 #default_site = 'localsite'
 default_format = 'pdf'
 
@@ -20,7 +20,9 @@ pass = ask("Enter your password: ") { |q| q.echo = "*" }
 at_exit { @nsc.logout }
 
 @nsc.reports.each do |rpt|
-	if rpt.template_id =~ /(?:xml|scap)/i or rpt.name =~ /archer/i
-		pp rpt
+	#if rpt.template_id =~ /(?:xml|scap)/i or rpt.name =~ /archer/i
+	if rpt.template_id == 'basic-vulnerability-check-results' and rpt.name =~ /internal - vulnerability scan/i
+		#pp rpt
+		puts "#{rpt.config_id} #{rpt.name} #{rpt.template_id}"
 	end
 end
