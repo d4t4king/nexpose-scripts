@@ -48,7 +48,7 @@ gexcl.each do |ipr|
 			break
 		end
 	end
-end	
+end
 unless is_global_exclusion
 	puts "#{check_ip} was NOT found in the Global Exclusion list.".red
 end
@@ -75,11 +75,49 @@ else
 			#put s"[*] Got bits #{bits} for range #{addrs[0].from}-#{addrs[0].to}".yellow
 			#ipaddr = IPAddr.new("#{addrs[0].from}/#{bits}")
 			#pp ipaddr
-			# if IP/range in scan range, 
+			# if IP/range in scan range,
 			retval = addrs[0] <=> check_iprobj
 			#print " retval == #{retval} ".yellow
 			if retval == 0
 				puts "(#{addrs[0]})".red
+				# export the scan log
+				print "Pulling scan log...."
+				#@nsc.export_scan(as.scan_id, "scanlog-#{as.scan_id}.zip")
+				@nsc.download("https://#{@nsc.host}:3780/data/scan/log?scan-id=#{as.scan_id}", "scanlog-#{as.scan_id}.zip")
+				puts "done."
+				# objectify scan logg
+				%x{unzip scanlog-#{as.scan_id}.zip}
+				log = ScanLog::Log.new("scan.log")
+				#reg = DateTime.new
+				reg = nil
+				#unreg = DateTime.new
+				unreg = nil
+				lines_found = Array.new
+				log.entries.each do |e|
+					if e.message =~ /#{check_ip}/
+						reg = DateTime.parse(e.datetime.to_s) if e.message =~ /Registered\./
+						#puts "#{e.datetime} :: #{e.message}"
+						unreg = DateTime.parse(e.datetime.to_s) if e.message =~ /Unregistered\./
+						lines_found.push(e.to_s)
+					end
+				end
+				# look for affected IP/range
+				if reg.nil? and unreg.nil?
+					puts "Unable to find register/unregister for IP (#{check_ip})".yellow
+					pp lines_found
+				else
+					if reg.nil?
+						reg = DateTime.new(1970,1,1,0,0,0)
+					end
+					if unreg.nil?
+						unreg = DateTime.new(1970,1,1,0,0,0)
+					end
+					reg = reg.new_offset('-08:00')
+					unreg = unreg.new_offset('-08:00')
+					puts "#{check_ip} was first touched at " + reg.to_s.green + "."
+					puts "The scan of #{check_ip} finished at " + unreg.to_s.green + "."
+				end
+				%x{/bin/rm -f *scan.log scanlog-#{as.scan_id}.zip}
 				completed = @nsc.completed_assets(as.scan_id)
 				#pp completed
 				completed.each do |c|
