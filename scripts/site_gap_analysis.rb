@@ -22,10 +22,14 @@ nsc = Connection.new(host, user, pass)
 nsc.login  
 at_exit { nsc.logout }  
   
+# loop through every site
+puts "Looping through the sites on the console specified...."
 nsc.sites.each do |ss|  
 	site = Site.load(nsc, ss.id)
 	if site.included_addresses.size > 1
 		types = Hash.new
+		# count the address types
+		puts "Counting address object types in site (#{site.name})...."
 		site.included_addresses.each do |ip|
 			if types.key?(ip.class)
 				types[ip.class] += 1
@@ -34,7 +38,10 @@ nsc.sites.each do |ss|
 			end
 		end
 		# Skip sites with host names, since they are unlikely to be contiguous anyway
-		next if types.key?(Nexpose::HostName)
+		if types.key?(Nexpose::HostName)
+			puts "Skipping site with hostnames (#{site.name})...."
+			next
+		end
 		er_ary = Array.new
 		if site.name =~ /^.*\s+-\s+Vulnerability\s+Scan\s+-\s+(.*)$/
 			er_str = $1
@@ -49,11 +56,12 @@ nsc.sites.each do |ss|
 		else
 			next
 		end
-		puts "#{site.name}".cyan.bold
+		puts "#{site.name}: ".cyan.bold
 		print "#{er_ary.size}".green.bold
 		puts " IP addresses in network definition."
 		gap_ary = er_ary
 		got_ary = Array.new
+		# if we got here, then it's likely a scheduled vulnerability scan
 		site.included_addresses.each do |ipr|
 			if ipr.from and ipr.to
 				i = IPAddr.new(ipr.from.to_s)
@@ -63,6 +71,7 @@ nsc.sites.each do |ss|
 					i = i.succ
 				end
 			elsif ipr.from and ipr.to.nil?
+				# is a single IP
 				got_ary.push(ipr.from)
 				gap_ary.delete(ipr.from)
 			else
@@ -79,7 +88,7 @@ nsc.sites.each do |ss|
 			part = g.split(".").slice(0..2).join('.')
 			octs.push(part) unless octs.include?(part)
 		end
-		#pp gap_ary
+		pp gap_ary
 		#break
 	end
 end
