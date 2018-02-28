@@ -27,9 +27,7 @@ check_iprobj = Nexpose::IPRange.new("#{check_ip}/32")
 at_exit { @nsc.logout }
 
 # check for specified IP in Global Exclusions
-#gsettings = Nexpose::GlobalSettings.load(@nsc)
 gexcl = Nexpose::GlobalSettings.load(@nsc).asset_exclusions
-#pp gexcl
 is_global_exclusion = false
 gexcl.each do |ipr|
 	ck_ipaddr = IPAddr.new(check_iprobj.to_s)
