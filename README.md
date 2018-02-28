@@ -41,3 +41,28 @@ Collection of script to interact with the Nexpose console using the Ruby gem and
 
 ### scan_history_dump.rb
   Dump the scan history.
+
+### selookup.rb
+  Look up info on scan engines.
+
+### site_gap_analysis.rb
+  Show where the gaps are in site coverage.
+
+### sites_w_engines_dump.rb
+  Dump sites and their scan engine.
+
+### srt-lookup.rb
+  Lookup IPs affected by SRTs
+
+### stale-assets.rb
+  Display and (optionally) remove stale assets.
+
+### tarex_anal.rb
+  Analyze targets and exclusions.
+
+### target_v_excl_api.rb
+  Show targets and exclusions for analysis.
+
+### upload-archer-vulns.rb
+  Create scan template with actionable vulnerabilities from Archer
+
