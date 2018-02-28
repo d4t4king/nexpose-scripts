@@ -21,13 +21,15 @@ nsc.login
 at_exit { nsc.logout }
 
 if ARGV[0].nil?
+	puts "Usage: $0 <site name>"
 	raise "Specify a site name".red.bold
 else 
 	@site2a = ARGV[0]
 end
 
+# build site name to id hash (?)
 s2id = Utils.sites2ids(nsc)
-
+# get the list of global exclusions
 globex = Nexpose::GlobalSettings.load(nsc).asset_exclusions
 
 puts "Found ID: #{s2id[@site2a]}"
@@ -38,7 +40,6 @@ total_addrs = 0
 ex_addrs = 0
 unres_addrs = 0
 site.included_addresses.each do |iaddr|
-	#puts "#{iaddr}: #{iaddr.class}"
 	total_addrs += 1
 	ip = ''
 	if iaddr.is_a?(Nexpose::HostName)
