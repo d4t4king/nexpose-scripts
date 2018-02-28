@@ -11,6 +11,9 @@ engines:
     exclude_fingerprints: []
   rubocop:
     enabled: true
+    checks:
+      Rubocop/Metrcis/MethodLength:
+        enabled: false
 ratings:
   paths:
   - Gemfile.lock
