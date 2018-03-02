@@ -7,7 +7,7 @@ require 'highline/import'
 
 default_host = 'is-vmcrbn-p02***REMOVED***'
 #default_port = 3780
-default_user = 'ad-cheselto'
+default_user = 'sv-nexposegem'
 #default_site = 'localsite'
 default_format = 'pdf'
 default_site_id = '405'
