@@ -15,6 +15,8 @@ default_host = 'nc1***REMOVED***'
 default_user = 'user'
 default_ip = '10.0.0.1'
 
+verbose = false
+
 host = ask("Enter the server name (host) for Nexpose: ") { |q| q.default = default_host }
 user = ask("Enter your username to log on: ") { |q| q.default = default_user }
 pass = ask("Enter your password: ") { |q| q.echo = "*" }
@@ -56,7 +58,43 @@ device = @nsc.find_device_by_address(check_ip)
 puts "done."
 affsite = Nexpose::Site.load(@nsc, device.site_id)
 print "Affiliated site: ".green
-puts "#{affsite.name}".yellow
+puts "#{affsite.name}".light_yellow
+
+my_sites = []
 # loop through the sites
-#@nsc.sites.each do |ssum|
-#	site = Nexpose::Site.load(@nsc, ssum.id)
+@nsc.sites.each do |ssum|
+	site = Nexpose::Site.load(@nsc, ssum.id)
+	if site.included_scan_targets[:addresses].size > 0
+		site.included_scan_targets[:addresses].each do |targ|
+			if targ.is_a?(Nexpose::IPRange)
+				#puts "Is ip range.".magenta.bold
+				if targ.to.nil? == false
+					if targ.from < check_ip and check_ip < targ.to
+						puts "Looks like #{check_ip} is a target in range #{targ.from} - #{targ.to} for site #{site.name}.".light_green
+					end
+				else
+					if targ.from == check_ip
+						puts "Looks like #{check_ip} is a target in range #{targ.from} - #{targ.to} for site #{site.name}.".light_green
+					end
+				end						
+			elsif targ.is_a?(Nexpose::HostName)
+				#puts "Is a host name.".magenta
+				begin
+					addr = IPAddr.new(IPSocket.getaddress(targ.to_s.downcase))
+					if addr == IPAddr.new(check_ip)
+						puts "Found hostname (#{targ.to_s.downcase}) matching IP (#{check_ip}) in site #{site.name}.".light_green
+						break
+					end
+				rescue SocketError => err
+					if verbose
+						puts "Unable to resolve hostname (#{targ.to_s.downcase}).".light_blue
+					end
+				end
+			else
+				puts "Unexpected object type: #{targ.class}"
+				exit 1
+			end
+		end
+	end
+end
+
