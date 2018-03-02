@@ -27,6 +27,9 @@ Collection of script to interact with the Nexpose console using the Ruby gem and
 ### list_scan_templates.rb
   List the scan templates in the console.  (Useful for generating programmatic scan data or configs.)
 
+### mass-change-schedules.rb
+  Change the schedule repeater type for site names that match certain criteria (naming convention)
+
 ### move_site_excl_to_global.rb
   Move site-specific exclusions to Global Settings as global exclusions.
 
