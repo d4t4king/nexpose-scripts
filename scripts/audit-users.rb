@@ -236,6 +236,40 @@ when "mail"
 			mail.deliver
 		end
 	end
+when "disable"
+	# Note: This option does not work.  For some reason there is an error when
+	# trying to #save the user object after changing the enabled attribute.
+	@nsc.list_users.each do |user|
+		# skip local, administrative only accounts 
+		next if user.name =~ /\.local/
+		# skip nxadmin
+		next if user.name == "nxadmin"
+		# skip accounts already disabled
+		next if user.is_disabled == true
+		# mySites = get_user_sites(@nsc, userSites, user.id)
+		if id2logon[user.id] == 0
+			puts "Warning! User (#{user.name}) has never logged in!".red.bold
+			puts "#{user.id},#{user.name},\"#{user.full_name}\",#{user.email},#{user.auth_source},#{user.is_admin},#{user.is_disabled},#{user.is_locked},#{user.site_count},#{user.group_count},0".cyan
+			print "Disabling user....".red.bold
+			uo = Nexpose::User.load(@nsc, user.id)
+			uo.enabled = 0
+			uo.save(@nsc)
+			puts "done.".red.bold
+		else
+			dt = DateTime.strptime(id2logon[user.id].to_s[0...-3], "%s")
+			dt = dt.new_offset("-08:00")
+			#puts "dt is a #{dt.class}"
+			if (myNow - dt).to_i >= 365
+				puts "User (#{user.name}) hasn't logged in 1 year or longer!".yellow.bold
+				puts "#{user.id},#{user.name},\"#{user.full_name}\",#{user.email},#{user.auth_source},#{user.is_admin},#{user.is_disabled},#{user.is_locked},#{user.site_count},#{user.group_count},#{dt}".cyan
+				print "Disabling user.....".red.bold
+				uo = Nexpose::User.load(@nsc, user.id)
+				uo.enabled = 0
+				uo.save(@nsc)
+				puts "done.".red.bold
+			end
+		end
+	end
 when "export"
 	CSV.open(file, "wb") do |csv|
 		csv << %w(ID UserName FullName Email AuthSource IsAdmin IsDisabled IsLocked SiteCount GroupCount LastLogon)
