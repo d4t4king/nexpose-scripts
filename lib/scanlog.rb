@@ -158,7 +158,11 @@ class ScanLog::Log
 				errstr = line + "\n"
 				next
 			end
-			
+			if line =~ /\Ajavax.net.ssl/
+				in_error = true
+				errstr = line + "\n"
+				next
+			end
 			if line =~ /\Ajava\./
 				in_error = true
 				errstr = line + "\n"
@@ -181,6 +185,8 @@ class ScanLog::Log
 				# this SHOULD NOT match here, but it is for some strange reason.
 				# so throw it out
 				elsif line =~ /java\.nio\.channels\.(?:Read|Write)PendingException/
+					next
+				elsif line =~ /java\.nio\.channels\.(?:UnresolvedAddress|ClosedByInterrupt)Exception/
 					next
 				elsif line =~ /\Ajava\.(?:net|lang|io)\.(.*?)$/
 					exc = $1 
