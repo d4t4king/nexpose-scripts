@@ -1,8 +1,8 @@
 #!/usr/bin/env ruby
 
 require 'pp'
-require 'colorize'
 require 'date'
+require 'colorize'
 require 'getoptlong'
 
 require_relative '../lib/scanlog'
@@ -85,3 +85,10 @@ puts "#{scan_log.target_count} targets."
 puts "#{scan_log.unresolved_count} unresolved names."
 puts "#{scan_log.dead_target_count} dead targets."
 puts "#{scan_log.exclusions.size} exclusions."
+
+scan_log.entries.each do |entry|
+	if entry.message =~ /Administrative credentials/
+		puts entry
+	end
+end
+
