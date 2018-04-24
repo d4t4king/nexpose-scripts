@@ -7,7 +7,7 @@ require 'highline/import'
 
 default_host = 'is-vmcrbn-p01***REMOVED***'
 #default_port = 3780
-default_user = 'ad-cheselto'
+default_user = 'sv-nexposegem'
 default_format = 'pdf'
 default_vuln_list = '/tmp/vuln.list'
 
