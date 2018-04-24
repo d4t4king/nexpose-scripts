@@ -158,16 +158,24 @@ class ScanLog::Log
 				errstr = line + "\n"
 				next
 			end
-			
-			if line =~ /\Ajava\./
+			if line =~ /\Ajavax.net.ssl/
 				in_error = true
 				errstr = line + "\n"
-				if line =~ /\Ajava\.(?:net|lang|io)\.(.*?): (.*)/
+				next
+			end
+			if line =~ /\A(?:Caused\s*by:\s*)?java\./
+				puts "matched \"Caused by: java\"....".green.bold
+				in_error = true
+				puts "in_error: #{in_error}".green.bold
+				errstr = line + "\n"
+				if line =~ /\A(?:Caused\s*by:\s*)?java\.(?:util|net|lang|io)\.(.+):?\s*(.*)/
 					exc = $1 
+					print "Captured exception: "
+					puts "#{exc}".magenta.bold
 					msg = $2
 					exc_str = ""
 					case exc
-					when /(?:IO|ConnectSocketTimeout)Exception/
+					when /(?:concurrent|IO|Execution|Connect|SocketTimeout|Interrupted)Exception/
 						exc_str = "#{exc}[#{msg}]"
 					else
 						exc_str = exc
@@ -180,7 +188,11 @@ class ScanLog::Log
 				# java.nio.channels.WritePendingException
 				# this SHOULD NOT match here, but it is for some strange reason.
 				# so throw it out
-				elsif line =~ /java\.nio\.channels\.(?:Read|Write)PendingException/
+				elsif line =~ /\Ajava\.nio\.channels\.(?:Read|Write)PendingException/
+					next
+				elsif line =~ /\Ajava\.nio\.channels\.(?:UnresolvedAddress|ClosedByInterrupt)Exception/
+					next
+				elsif line =~ /java\.nio\.channels\.(?:SocketChannel|spi.AbstractInterruptibleChannel)/
 					next
 				elsif line =~ /\Ajava\.(?:net|lang|io)\.(.*?)$/
 					exc = $1 
@@ -245,6 +257,10 @@ class ScanLog::Log
 			next if line =~ /^\s+(?:[0-9a-zA-F]{2}\s)+.*/
 			# skip empty lines
 			next if line =~ /^\s*$/
+
+			# if we've gotten here, and the line doesn't start with
+			# something that looks like a date, just throw it out for now.
+			next if line !~ /\A[0-9T:-]+/
 
 			e = ScanLog::Entry.new(line)
 

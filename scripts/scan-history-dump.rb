@@ -1,8 +1,9 @@
 #!/usr/bin/env ruby
 
+require 'pp'
+require 'csv'
 require 'nexpose'
 require 'colorize'
-require 'pp'
 require 'highline/import'
 
 default_host = 'localhost'
@@ -24,6 +25,7 @@ at_exit { @nsc.logout }
 
 scan_statuses = {}
 force_end = false
+rows = Array.new
 @nsc.sites.each do |site|
 	config = Nexpose::Site.load(@nsc, site.id)
 	scan_history = @nsc.site_scan_history(site.id)
@@ -33,20 +35,28 @@ force_end = false
 		else
 			scan_statuses[scan.status] = 1
 		end
-		if scan.status == 'stopped'
-			force_end = true
-			# is actually scan summery
-			#pp scan
-			this_site = Nexpose::Site.load(@nsc, scan.site_id)
-			puts "Site Name: #{this_site.name}"
+		site = Nexpose::Site.load(@nsc, scan.site_id)
+		engine = ''
+		if scan.engine_id == -1
+			engine = 'Pool or Error'
+		else 
+			eng = Nexpose::Engine.load(@nsc, scan.engine_id)
+			engine = eng.name
 		end
-		break
+		rows << [ scan.scan_id, scan.site_id, site.name, scan.start_time, scan.end_time, scan.engine_id, engine, scan.status, scan.nodes.live, scan.nodes.dead, scan.nodes.filtered, scan.nodes.unresolved, scan.nodes.other ]
+		print ".".cyan
 	end
-	if force_end
-		break
-	end
+	print ".".green.blink
 end
+puts
 
 scan_statuses.keys.each do |k|
 	puts "#{k}: #{scan_statuses[k]}"
+end
+
+CSV.open(outfile, "wb") do |csv|
+	csv << ["Scan ID","Site ID","Site Name","Start Time","End Time","Scan Engine ID", "Scan Engine Name","Scan Status","Live Nodes","Dead Nodes","Filtered Nodes","Unresolved Nodes","Other Nodes"]
+	rows.each do |row|
+		csv << row
+	end
 end

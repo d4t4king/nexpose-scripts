@@ -86,9 +86,23 @@ puts "#{scan_log.unresolved_count} unresolved names."
 puts "#{scan_log.dead_target_count} dead targets."
 puts "#{scan_log.exclusions.size} exclusions."
 
+asset_creds = Hash.new
+creds_success = Hash.new
+creds_success["false"] = 0
+creds_success["true"] = 0
 scan_log.entries.each do |entry|
 	if entry.message =~ /Administrative credentials/
-		puts entry
+		if entry.message =~ /(.+):445\/tcp\s+Administrative credentials failed \(access denied\)./
+			asset = $1
+			asset_creds[asset] = false
+			creds_success["false"] += 1
+		elsif entry.message =~ /(.+):139\/tcp\s+/
+			# We don't care about 139 right now.  Just count the 445 connection attempts.
+			next
+		else
+			puts "\t#{entry.message}"
+		end	
 	end
 end
 
+puts "Total: #{asset_creds.keys.size} Success: #{creds_success["true"]} Fail: #{creds_success["false"]}"
