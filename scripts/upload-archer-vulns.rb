@@ -34,18 +34,28 @@ end
 vuln_ids = Array.new
 vulns.each do |vt|
 	puts "Title: #{vt}".green
-	vobj = @nsc.find_vulns_by_title(vt, true)
+	#vobj = @nsc.find_vulns_by_title(vt, true)
+	vobj = @nsc.find_vuln_check(vt, false, true)
+	#pp vobj
+	if vobj.is_a?(Array)
+		puts "Found #{vobj.size} checks partially matching #{vt}"
+	#	if vobj.size <= 5
+	#		pp vobj
+	#	end
+	end
+
+	#exit 1
 	if vobj.is_a?(Array)
 		#pp vobj
 		#exit 1
 		vobj.each do |v|
-			if !vuln_ids.include?(v.id)
-				vuln_ids << v.id
+			if !vuln_ids.include?(v.check_id)
+				vuln_ids << v.check_id
 			end
 		end
 	else
-		if !vuln_ids.include?(vobj.id)
-			vuln_ids << vobj.id
+		if !vuln_ids.include?(vobj.check_id)
+			vuln_ids << vobj.check_id
 		end
 	end
 end
@@ -54,12 +64,14 @@ end
 
 egrc_templ_id = nil
 @nsc.scan_templates.each do |st|
-	if st.name == 'Archer_Imported_vulns'
+	if st.name == 'Archer_Imported_Vulns'
 		puts "ID: #{st.id} Name: #{st.name}"
 		egrc_templ_id = st.id
 		break
 	end
 end
+
+puts "#{vuln_ids.uniq.size} total vulns selected for addition to scan template."
 
 ### create the scan template with the desired vuln checks.
 template = Nexpose::ScanTemplate.load(@nsc, egrc_templ_id)
