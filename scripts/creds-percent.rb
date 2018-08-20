@@ -106,3 +106,5 @@ scan_log.entries.each do |entry|
 end
 
 puts "Total: #{asset_creds.keys.size} Success: #{creds_success["true"]} Fail: #{creds_success["false"]}"
+puts "Percent success: #{(creds_success["true"] % asset_creds.keys.size)}%"
+
