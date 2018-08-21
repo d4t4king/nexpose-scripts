@@ -17,12 +17,20 @@ pass = ask("Enter your password: ") { |q| q.echo = "*" }
 
 @nsc = Nexpose::Connection.new(host, user, pass)
 @nsc.login
+
+# Check Session ID
+if @nsc.session_id
+    puts 'Login Successful'
+else
+    puts 'Login Failure'
+end
+
 at_exit { @nsc.logout }
 
 @nsc.reports.each do |rpt|
 	#if rpt.template_id =~ /(?:xml|scap)/i or rpt.name =~ /archer/i
-	if rpt.template_id == 'basic-vulnerability-check-results' and rpt.name =~ /internal - vulnerability scan/i
+	#if rpt.template_id == 'basic-vulnerability-check-results' and rpt.name =~ /internal - vulnerability scan/i
 		#pp rpt
 		puts "#{rpt.config_id} #{rpt.name} #{rpt.template_id}"
-	end
+	#end
 end
