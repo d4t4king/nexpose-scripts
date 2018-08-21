@@ -1,9 +1,33 @@
 #!/usr/bin/env ruby
 
 require 'pp'
+require 'json'
 require 'nexpose'
 require 'colorize'
+require 'getoptlong'
 require 'highline/import'
+
+def usage
+	puts <<-END
+#{0} -h -H 'hostname' -f 'format' -v <vuln_list> -c <conffile>
+
+Where:
+-h|--help				Display this message and exit.
+-H|--host			The Nexpose console to log into and manage
+-c|--config			The JSON config file for CyberARK
+-f|--format			Format for output; defaults to PDF
+-v|--vuln_list	List of vulnerabilities to upload.
+
+END
+	exit 0
+end
+
+def get_cark_creds(config)
+  pass = %x{ssh root@#{config['aimproxy']} '/opt/CARKaim/sdk/clipasswordsdk GetPassword -p AppDescs.AppID=#{config['appid']} -p "Query=safe=#{config['safe']};Folder=#{config['folder']};object=#{config['objectname']}" -o Password'}
+  pass.chomp!
+  #puts "|#{pass}|"
+  return config['username'],pass
+end
 
 default_host = 'is-vmcrbn-p01***REMOVED***'
 #default_port = 3780
@@ -11,18 +35,52 @@ default_user = 'sv-nexposegem'
 default_format = 'pdf'
 default_vuln_list = '/tmp/vuln.list'
 
-host = ask("Enter the server name (host) for Nexpose: ") { |q| q.default = default_host }
-user = ask("Enter your username to log on: ") { |q| q.default = default_user }
-pass = ask("Enter your password: ") { |q| q.echo = "*" }
-vulns_file = ask("Enter the filename that contains the list of vulns to process: ") { |q| q.default = default_vuln_list }
+@host = nil
+@help = false
+@vulns_file = nil
+@format = 'pdf'
+@config = nil
+conffile = nil
 
-@nsc = Nexpose::Connection.new(host, user, pass)
+opts.each do |opt,arg|
+	case opt
+	when '--help'
+		@help = true
+	when '--host'
+		@host = arg
+	when '--config'
+		conffile = arg
+	when '--format'
+		@format = arg
+	when '--vuln_list'
+		@vulns_file = arg
+	else
+		raise ArgumentError "Unrecognized argument: #{0}"
+	end
+end
+
+usage if @help
+usage if @host.nil?
+usage if @vulns_file.nil?
+
+if conffile.nil?
+	@host = ask("Enter the server name (host) for Nexpose: ") { |q| q.default = default_host }
+	@user = ask("Enter your username to log on: ") { |q| q.default = default_user }
+	@pass = ask("Enter your password: ") { |q| q.echo = "*" }
+	@vulns_file = ask("Enter the filename that contains the list of vulns to process: ") { |q| q.default = default_vuln_list }
+else
+	fileraw = File.read(conffile)
+	@config = JSON.parse(conffile)
+	@user,@pass = get_cark_creds(@config)
+end
+
+@nsc = Nexpose::Connection.new(@host, @user, @pass)
 @nsc.login
 at_exit { @nsc.logout }
 
 vulns = Array.new
 
-f = File.open(vulns_file)
+f = File.open(@vulns_file)
 f.each_line do |line|
 	line.chomp!
 	if !vulns.include?(line)
@@ -120,4 +178,3 @@ File.open("/tmp/site-#{site_obj.id}-scan-#{scan_data.id}-scap.xml", 'w') { |f| f
 puts "done."
 puts "Your report has been saved to /tmp/site-#{site_obj.id}-scan-#{scan_data.id}-scap.xml"
 =end
-

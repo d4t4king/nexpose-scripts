@@ -5,13 +5,14 @@ require 'csv'
 require 'mail'
 require "nexpose"
 require "colorize"
+require "getoptlong"
 require "highline/import"
 
 Mail.defaults do
 	delivery_method :smtp, address: "smtp***REMOVED***", openssl_verify_mode: OpenSSL::SSL::VERIFY_NONE, verify: false
 end
 
-# returns a has of arrays containing userid (k) 
+# returns a has of arrays containing userid (k)
 # and an array of siteids (v) the user can access
 def pop_user_sites(conn)
 	userSites = Hash.new
@@ -30,8 +31,8 @@ def pop_user_sites(conn)
 		end
 	end
 	return userSites
-end				
-	
+end
+
 # returns an array of site names for the specified user
 def get_user_sites(conn, userSites, userid)
 	sitesArray = Array.new
@@ -67,30 +68,94 @@ def pop_site_ids2names(conn)
 	return ids2names
 end
 
+def usage
+	puts <<-END
+
+#{$0} -h -c <config> -a <action> -o <output file>
+
+Where:
+-h|--help				Displayes this message then exits.
+-H|--host				Nexpose console to connect to.
+-c|--config			Specifies the config file for CyberARK in JSON format.
+-a|--action			The action to take.
+-o|--output			File to dave output to.
+
+END
+	exit 0
+end
+
+def get_cark_creds(config)
+    pass = %x{ssh root@#{config['aimproxy']} '/opt/CARKaim/sdk/clipasswordsdk GetPassword -p AppDescs.AppID=#{config['appid']} -p "Query=safe=#{config['safe']};Folder=#{config['folder']};object=#{config['objectname']}" -o Password'}
+    pass.chomp!
+    #puts "|#{pass}|"
+    return config['username'],pass
+end
+
 default_host = "is-vmcrbn-p01***REMOVED***"
-#default_port = 3780
 default_user = "sv-nexposegem"
 default_format = "pdf"
 default_action = "show"
 default_file = "/tmp/nexpose_export.csv"
 
-host = ask("Enter the server name (host) for Nexpose: ") { |q| q.default = default_host }
-user = ask("Enter your username to log on: ") { |q| q.default = default_user }
-pass = ask("Enter your password: ") { |q| q.echo = "*" }
-action = ask("Specify an action: (show|show_stale|export|mail|disable)") { |q| q.default = default_action }
-file = ""
-if action == "export"
-	file = ask("Enter the path to the export file: ") { |q| q.default = default_file }
+opts = GetoptLong.new(
+	['--help', '-h', GetoptLong::NO_ARGUMENT ],
+	['--host', '-H', GetoptLong::REQUIRED_ARGUMENT ],
+	['--config', '-c', GetoptLong::REQUIRED_ARGUMENT ],
+	['--action', '-a', GetoptLong::REQUIRED_ARGUMENT ],
+	['--output', '-o', GetoptLong::REQUIRED_ARGUMENT ],
+)
+
+@help = false
+@config = nil
+conffile = nil
+@action = nil
+@output = nil
+@host = nil
+
+opts.each do |opt,arg|
+	case opt
+	when '--help'
+		@help = true
+	when '--host'
+		@host = arg
+	when '--config'
+		conffile = arg
+	when '--action'
+		@action = arg
+	when '--output'
+		@output = arg
+	else
+		raise ArgumentError "Unrecognized argument: #{opt}"
+	end
 end
 
-@nsc = Nexpose::Connection.new(host, user, pass)
+if conffile.nil?
+	@host = ask("Enter the server name (host) for Nexpose: ") { |q| q.default = default_host }
+	@user = ask("Enter your username to log on: ") { |q| q.default = default_user }
+	@pass = ask("Enter your password: ") { |q| q.echo = "*" }
+	@action = ask("Specify an action: (show|show_stale|export|mail|disable)") { |q| q.default = default_action }
+	@file = ""
+	if action == "export"
+		@file = ask("Enter the path to the export file: ") { |q| q.default = default_file }
+	end
+else
+	fileraw = File.read(conffile)
+	@config = JSON.parse(fileraw)
+	@user,@pass = get_cark_creds(@config)
+end
+
+usage if @help
+usage if @action.nil?
+usage if @host.nil?
+
+@nsc = Nexpose::Connection.new(@host, @user, @pass)
 @nsc.login
 
 at_exit { @nsc.logout }
 
 userSites = ''
 site_ids2names = Hash.new
-if action == "show"
+if @action == "show"
 	print "Getting the sites for each user....."
 	userSites = pop_user_sites(@nsc)
 	puts "done.".green
@@ -105,11 +170,11 @@ puts "done".green
 
 myNow = DateTime.now
 
-case action
+case @action
 when "show_stale"
 	puts "ID,UserName,FullName,Email,AuthSource,IsAdmin,IsDisabled,IsLocked,SiteCount,GroupCount,LastLogon"
 	@nsc.list_users.each do |user|
-		# skip local, administrative only accounts 
+		# skip local, administrative only accounts
 		next if user.name =~ /\.local/
 		# skip nxadmin
 		next if user.name == "nxadmin"
@@ -132,7 +197,7 @@ when "show_stale"
 when "show"
 	puts "ID,UserName,FullName,Email,AuthSource,IsAdmin,IsDisabled,IsLocked,SiteCount,GroupCount,LastLogon"
 	@nsc.list_users.each do |user|
-		# skip local, administrative only accounts 
+		# skip local, administrative only accounts
 		next if user.name =~ /\.local/
 		# skip nxadmin
 		next if user.name == "nxadmin"
@@ -172,7 +237,7 @@ when "show"
 	end
 when "mail"
 	@nsc.list_users.each do |u|
-		# skip local, administrative only accounts 
+		# skip local, administrative only accounts
 		next if u.name =~ /\.local/
 		# skip service accounts (?)
 		next if u.name =~ /^sv-/
@@ -189,12 +254,12 @@ when "mail"
 				cc			"cheselton@sempra.com"
 				subject		"Account Never Logged In"
 				body		<<~HERE
-					You have an account (#{u.name}) on the Enterprise Rapid7 Nexpose console 
-					on #{host} and have never logged in.  If you 
-					intend to use this account please log in within the next 30 days.  
+					You have an account (#{u.name}) on the Enterprise Rapid7 Nexpose console
+					on #{host} and have never logged in.  If you
+					intend to use this account please log in within the next 30 days.
 					Otherwise, your account will be disabled.
 
-					If you require access and are having trouble accessing your account, 
+					If you require access and are having trouble accessing your account,
 					please contact Charlie Heselton as soon as possible for assistance.
 
 					Thank you,
@@ -212,12 +277,12 @@ when "mail"
 					cc			"cheselton@sempra.com"
 					subject		"Account Not Logged In Last Calendar Year"
 					body		<<~HERE
-						You have an account (#{u.name}) on the Enterprise Rapid7 Nexpose console 
-						on #{host} and have not logged in within the last calendar year.  
-						If you intend to use this account, please log in within 
+						You have an account (#{u.name}) on the Enterprise Rapid7 Nexpose console
+						on #{host} and have not logged in within the last calendar year.
+						If you intend to use this account, please log in within
 						the next 30 days.  Otherwise, your account will be disabled.
 
-						If you require access and are having trouble accessing your account, 
+						If you require access and are having trouble accessing your account,
 						please contact Charlie Heselton as soon as possible for assistance.
 
 						Thank you,
@@ -240,7 +305,7 @@ when "disable"
 	# Note: This option does not work.  For some reason there is an error when
 	# trying to #save the user object after changing the enabled attribute.
 	@nsc.list_users.each do |user|
-		# skip local, administrative only accounts 
+		# skip local, administrative only accounts
 		next if user.name =~ /\.local/
 		# skip nxadmin
 		next if user.name == "nxadmin"
@@ -284,5 +349,5 @@ when "export"
 		end
 	end
 else
-	raise "Unrecognized action! (#{action})".red
+	raise "Unrecognized action! (#{@action})".red
 end
