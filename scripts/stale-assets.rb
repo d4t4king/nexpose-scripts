@@ -1,18 +1,88 @@
 #!/usr/bin/env ruby
 
 require 'pp'
+require 'json'
 require 'nexpose'
 require 'colorize'
+require 'getoptlong'
 require 'highline/import'
+
+def usage
+	puts <<-END
+
+#{$0} -h -C [JSON config]
+
+Where:
+-h|--help		Displays this message hen exists.
+-C|--config		Specifies the config information for CyberARK, in JSON format.
+#-H|--host		Specifies the Nexpose console to connect to.
+-s|--stale-days	Specifies the retention period.
+
+END
+	exit 0
+end
+
+# Expects a JSON decoded object in the following format:
+#{
+#  'aimproxy': '127.0.0.1',
+#  'username': 'Nexpose API user',
+#  'safe': 'Safe_Name',
+#  'appid': 'App_Name',
+#  'objectname': '',
+#}
+
+def get_cark_creds(config)
+	pass = %x{ssh root@#{config['aimproxy']} '/opt/CARKaim/sdk/clipasswordsdk GetPassword -p AppDescs.AppID=#{config['appid']} -p "Query=safe=#{config['safe']};Folder=#{config['folder']};object=#{config['objectname']}" -o Password'}
+	pass.chomp!
+	#puts "|#{pass}|"
+	return config['username'],pass
+end
 
 default_host = 'is-vmcrbn-p01***REMOVED***'
 default_user = 'sv-nexposegem'
+default_days = 90
 
-@host = ask("Enter the server name (host) for Nexpose: ") { |q| q.default = default_host }
-@user = ask("Enter your username to log on: ") { |q| q.default = default_user }
-@pass = ask("Enter your password: ") { |q| q.echo = "*" }
+opts = GetoptLong.new(
+	['--help', '-h', GetoptLong::NO_ARGUMENT ],
+	['--host', '-H', GetoptLong::REQUIRED_ARGUMENT ],
+	['--stale-days', '-s', GetoptLong::REQUIRED_ARGUMENT ],
+	['--config', '-C', GetoptLong::REQUIRED_ARGUMENT ],
+)
 
-@staleDays = 90
+@help = false
+@config = nil
+conffile = nil
+
+opts.each do |opt,arg|
+	case opt
+	when '--help'
+		@help = true
+	when '--host'
+		@host = arg
+	when '--config'
+		conffile = arg
+	when '--stale-days'
+		@staleDays = arg
+	else
+		raise ArgumentError "Unrecognized argument: #{opt}"
+	end
+end
+
+usage if @help
+
+if conffile.nil?
+	@host = ask("Enter the server name (host) for Nexpose: ") { |q| q.default = default_host }
+	@user = ask("Enter your username to log on: ") { |q| q.default = default_user }
+	@pass = ask("Enter your password: ") { |q| q.echo = "*" }
+	@staleDays = ask("Enter the maximum retention period (stale days): ") { |q| q.default = default_days }
+else
+	# import the JSON config from the file
+	fileraw = File.read(conffile)
+	@config = JSON.parse(fileraw)
+	@user,@pass = get_cark_creds(@config)
+	#puts "|#{@user}|\n|#{@pass}|"
+end
+
 
 @nsc = Nexpose::Connection.new(@host, @user, @pass)
 @nsc.login

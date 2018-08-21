@@ -1,24 +1,80 @@
 #!/usr/bin/env ruby  
 
+require 'pp'
+require 'json'
 require 'nexpose'
 require 'colorize'
-require 'pp'
+require 'getoptlong'
 require 'highline/import'
 include Nexpose
 
+def usage
+	puts <<-END
+
+Where:
+-h|--help		Display this message and then exit.
+-c|--config		Specify the JSON config file for CyberARK
+-H|--host		Nexpose Console host to connect to.
+-o|--output		File path to output the results.
+END
+	exit 0
+end
+
+def get_cark_creds(config)
+	pass = %x{ssh root@#{config['aimproxy']} '/opt/CARKaim/sdk/clipasswordsdk GetPassword -p AppDescs.AppID=#{config['appid']} -p "Query=safe=#{config['safe']};Folder=#{config['folder']};object=#{config['objectname']}" -o Password'}
+	pass.chomp!
+	return config['username'],pass
+end
+
 default_host = 'localhost'
-#default_port = 3780
 default_user = 'user'
 default_file = "/tmp/scan_time_analysis.csv"
 
-host = ask("Enter the server name (host) for Nexpose: ") { |q| q.default = default_host }
-#port = ask("Enter the port for Nexpose: ") { |q| q.default = default_port.to_s }
-user = ask("Enter your username: ") { |q| q.default = default_user }
-pass = ask("Enter your password: ") { |q| q.echo = "*" }
-outfile = ask("Enter the path to write out the results: ") { |q| q.default = default_file }
+opts = GetoptLong.new(
+	['--help', '-h', GetoptLong::NO_ARGUMENT ],
+	['--config', '-c', GetoptLong::REQUIRED_ARGUMENT ],
+	['--host', '-H', GetoptLong::REQUIRED_ARGUMENT ],
+	['--output', '-o', GetoptLong::REQUIRED_ARGUMENT ],
+)
+
+@help = false
+@config = nil
+conffile = nil
+@host = nil
+@user = nil
+@pass = nil
+@outfile = nil
+
+opts.each do |opt,arg|
+	case opt
+	when '--help'
+		@help = true
+	when '--config'
+		conffile = arg
+	when '--host'
+		@host = arg
+	when '--output'
+		@outfile = arg
+	else
+		raise ArgumentError "Unrecognized argument: #{opt}"
+	end
+end
+
+usage if @help
+
+if conffile.nil?
+	@host = ask("Enter the server name (host) for Nexpose: ") { |q| q.default = default_host }
+	@user = ask("Enter your username: ") { |q| q.default = default_user }
+	@pass = ask("Enter your password: ") { |q| q.echo = "*" }
+	@outfile = ask("Enter the path to write out the results: ") { |q| q.default = default_file }
+else
+	fileraw = File.read(conffile)
+	@config = JSON.parse(fileraw)
+	@user,@pass = get_cark_creds(@config)
+end
   
 #nsc = Connection.new(host, port, user, pass)
-nsc = Connection.new(host, user, pass)
+nsc = Connection.new(@host, @user, @pass)
 nsc.login  
 at_exit { nsc.logout }  
   
@@ -50,7 +106,7 @@ nsc.sites.each do |site|
 end
 
 sites = nsc.list_sites
-File.open(outfile, 'w') do |f|
+File.open(@outfile, 'w') do |f|
 	puts "Site Name,Site ID,Asset Count,Total Time (seconds),Total Time (Human),Average (min/asset)"
 	f.puts "Site Name,Site ID,Asset Count,Total Time (seconds),Total Time (Human),Average (min/asset)"
 	scan_times.each do |id,time|
