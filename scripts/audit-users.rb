@@ -8,10 +8,6 @@ require "colorize"
 require "getoptlong"
 require "highline/import"
 
-Mail.defaults do
-	delivery_method :smtp, address: "smtp***REMOVED***", openssl_verify_mode: OpenSSL::SSL::VERIFY_NONE, verify: false
-end
-
 # returns a has of arrays containing userid (k)
 # and an array of siteids (v) the user can access
 def pop_user_sites(conn)
@@ -129,6 +125,10 @@ opts.each do |opt,arg|
 	end
 end
 
+usage if @help
+usage if @action.nil?
+usage if @host.nil?
+
 if conffile.nil?
 	@host = ask("Enter the server name (host) for Nexpose: ") { |q| q.default = default_host }
 	@user = ask("Enter your username to log on: ") { |q| q.default = default_user }
@@ -143,10 +143,6 @@ else
 	@config = JSON.parse(fileraw)
 	@user,@pass = get_cark_creds(@config)
 end
-
-usage if @help
-usage if @action.nil?
-usage if @host.nil?
 
 @nsc = Nexpose::Connection.new(@host, @user, @pass)
 @nsc.login
@@ -246,6 +242,10 @@ when "mail"
 		# skip accounts already disabled
 		next if u.is_disabled == true
 
+		Mail.defaults do
+			delivery_method :smtp, host: "smtp***REMOVED***", address: "smtp***REMOVED***", openssl_verify_mode: OpenSSL::SSL::VERIFY_NONE, verify: false
+		end
+
 		if id2logon[u.id] == 0
 			mail = Mail.new do
 				from		"tvm-no-reply@sempra.com"
@@ -255,7 +255,7 @@ when "mail"
 				subject		"Account Never Logged In"
 				body		<<~HERE
 					You have an account (#{u.name}) on the Enterprise Rapid7 Nexpose console
-					on #{host} and have never logged in.  If you
+					on #{@host} and have never logged in.  If you
 					intend to use this account please log in within the next 30 days.
 					Otherwise, your account will be disabled.
 
@@ -278,7 +278,7 @@ when "mail"
 					subject		"Account Not Logged In Last Calendar Year"
 					body		<<~HERE
 						You have an account (#{u.name}) on the Enterprise Rapid7 Nexpose console
-						on #{host} and have not logged in within the last calendar year.
+						on #{@host} and have not logged in within the last calendar year.
 						If you intend to use this account, please log in within
 						the next 30 days.  Otherwise, your account will be disabled.
 
