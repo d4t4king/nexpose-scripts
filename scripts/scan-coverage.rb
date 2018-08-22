@@ -5,16 +5,29 @@ require 'colorize'
 require 'nexpose'
 require 'netaddr'
 require 'pp'
+require 'highline/import'
 
 require_relative '../lib/utils'
 
-host = "172.16.100.170"
-user = 'sv-nexposegem'
-pass = 'Sempra01!'
-port = '3780'
+default_host = "localhost"
+default_user = 'nxadmin'
 
-@nsc = Nexpose::Connection.new(host, user, pass, port)
+cark = 'cark_conf.json'
+if File.exists?(cark)
+	fileraw = File.read(cark)
+	@config = JSON.parse(fileraw)
+	user,pass = Utils.get_cark_creds(@config)
+else
+	raise "Unable to find the CyberARK config file."
+end
 
+if @config['nexposehost'].nil?
+	host = ask("Enter the server name (host) for Nexpose: ") { |q| q.default = default_host }
+else
+	host = @config['nexposehost']
+end
+
+@nsc = Nexpose::Connection.new(host, user, pass)
 at_exit{ @nsc.logout }
 
 begin
@@ -30,10 +43,6 @@ excl = Hash.new
 
 # loop thru all the sites on the console
 @nsc.sites.each do |ssum|
-	# skip the site if it doesn't have "internal" in the name
-	if ssum.name !~ /Internal - /
-		next
-	end
 	# load the site details
 	s = Nexpose::Site.load(@nsc, ssum.id)
 	s.included_addresses.each do |ia|
@@ -50,22 +59,6 @@ excl = Hash.new
 			end
 		end
 	end
-	#if s.excluded_addresses.size > 0
-	#	s.excluded_addresses.each do |ex|
-	#		if ex.is_a?(Nexpose::IPRange)
-	#			if ex.to.nil?
-	#				range = ex.from.to_s
-	#			else
-	#				range = ex.from.to_s + "-" + ex.to.to_s
-	#			end
-	#			if ips[ex.from.to_s].nil?
-	#				ips[ex.from.to_s] = [{range => ssum.id}]
-	#			else
-	#				ips[ex.from.to_s].push( {range => ssum.id} ) unless ips.keys.include?(ex.from.to_s)
-	#			end
-	#		end
-	#	end
-	#end
 end
 
 ipaddrs = Array.new
@@ -100,7 +93,7 @@ ipaddrs.each do |net|
 			#puts "No".red
 			if net.is_contained?(net2)
 				coverage.push(net2) unless coverage.include?(net2)
-			end	
+			end
 		end
 	end
 end

@@ -12,9 +12,22 @@ default_host = 'localhost'
 default_user = 'user'
 default_pass = 'pass'
 
-host = ask('Enter the server name (host) for Nexpose: ') { |q| q.default = default_host }
-user = ask('Enter your username: ') { |q| q.default = default_user }
-pass = ask('Enter your password: ') { |q| q.echo = '*' }
+cark = 'cark_conf.json'
+if File.exists?(cark)
+	fileraw = File.read(cark)
+	@config = JSON.parse(fileraw)
+	user,pass = Utils.get_cark_creds(@config)
+else
+	raise "Unable to find CyberARK conf file."
+end
+
+if @config['nexposehost'].nil?
+	host = ask("Enter the server name (host) for Nexpose: ") { |q| q.default = default_host }
+else
+	host = @config['nexposehost']
+end
+#user = ask('Enter your username: ') { |q| q.default = default_user }
+#pass = ask('Enter your password: ') { |q| q.echo = '*' }
 
 nsc = Nexpose::Connection.new(host, user, pass)
 nsc.login
@@ -23,7 +36,7 @@ at_exit { nsc.logout }
 if ARGV[0].nil?
 	puts "Usage: $0 <site name>"
 	raise "Specify a site name".red.bold
-else 
+else
 	@site2a = ARGV[0]
 end
 
@@ -65,7 +78,7 @@ site.included_addresses.each do |iaddr|
 				puts "Excluded: #{ip.to_s}".red.bold
 				ex_addrs += 1
 			end
-		else 
+		else
 			if gex.from == ip
 				puts "Excluded: #{ip.to_s}".red.bold
 				ex_addrs += 1

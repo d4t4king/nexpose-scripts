@@ -5,16 +5,31 @@ require 'nexpose'
 require 'colorize'
 require 'highline/import'
 
-default_host = 'is-vmcrbn-p01***REMOVED***'
-#default_port = 3780
-default_user = 'ad-cheselto'
+require_relative '../lib/utils'
+
+default_host = 'localhost'
+default_user = 'nxadmin'
 default_format = 'pdf'
 default_host_list = '/tmp/host.list'
 default_vuln_list = '/tmp/vuln.list'
 
-host = ask("Enter the server name (host) for Nexpose: ") { |q| q.default = default_host }
-user = ask("Enter your username to log on: ") { |q| q.default = default_user }
-pass = ask("Enter your password: ") { |q| q.echo = "*" }
+cark = 'cark_conf.json'
+if File.exists?(cark)
+	fileraw = File.read(cark)
+	@config = JSON.parse(fileraw)
+	user,pass = Utils.get_cark_creds(@config)
+else
+	raise "Couldn't find the CyberARK config file."
+end
+
+if @config['nexposehost'].nil?
+	host = ask("Enter the server name (host) for Nexpose: ") { |q| q.default = default_host }
+else
+	host = @config['nexposehost']
+end
+
+#user = ask("Enter your username to log on: ") { |q| q.default = default_user }
+#pass = ask("Enter your password: ") { |q| q.echo = "*" }
 hosts_file = ask("Enter the filename that contains the list of hosts to scan: ") { |q| q.default = default_host_list }
 vulns_file = ask("Enter the filename that contains the list of vulns to process: ") { |q| q.default = default_vuln_list }
 
@@ -77,7 +92,7 @@ template = Nexpose::ScanTemplate.load(@nsc)
 	salt = 1 + rand(99999)
 #	puts "Default scan name exists. Using salt #{salt}"
 	template.name = "archer_filtered_scan_test_#{salt}"
-#else 
+#else
 #	template.name = "archer_filtered_scan_test"
 #end
 template.description = "Vulnerability scan for specific vulns and hosts for import into Archer"
@@ -122,4 +137,3 @@ data = adhoc.generate(@nsc)
 File.open("/tmp/site-#{site_obj.id}-scan-#{scan_data.id}-scap.xml", 'w') { |f| f.write(data) }
 puts "done."
 puts "Your report has been saved to /tmp/site-#{site_obj.id}-scan-#{scan_data.id}-scap.xml"
-

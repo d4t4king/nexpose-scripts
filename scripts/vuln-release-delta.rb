@@ -5,15 +5,27 @@ require 'nexpose'
 require 'colorize'
 require 'highline/import'
 
-default_host = 'nc1***REMOVED***'
-#default_port = 3780
+require_relative '../lib/utils'
+
+default_host = 'localhost'
 default_user = 'user'
 
 verbose = false
 
-host = ask("Enter the server name (host) for Nexpose: ") { |q| q.default = default_host }
-user = ask("Enter your username to log on: ") { |q| q.default = default_user }
-pass = ask("Enter your password: ") { |q| q.echo = "*" }
+cark = 'cark_conf.json'
+if File.exists?(cark)
+	fileraw = File.read(cark)
+	@config = JSON.parse(fileraw)
+	user,pass = Utils.get_cark_creds(@config)
+else
+	raise "Unable to find CyberARK conf file."
+end
+
+if @config['nexposehost'].nil?
+	host = ask("Enter the server name (host) for Nexpose: ") { |q| q.default = default_host }
+else
+	host = @config['nexposehost']
+end
 
 @nsc = Nexpose::Connection.new(host, user, pass)
 @nsc.login
@@ -24,7 +36,7 @@ before = today - 90
 print "Start: ".green
 print "#{before}".yellow
 print "  "
-print "Today: ".green 
+print "Today: ".green
 puts "#{today}".yellow
 
 vulns = @nsc.find_vulns_by_date(before, today)

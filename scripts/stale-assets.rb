@@ -7,6 +7,8 @@ require 'colorize'
 require 'getoptlong'
 require 'highline/import'
 
+require_relative '../lib/utils'
+
 def usage
 	puts <<-END
 
@@ -15,31 +17,15 @@ def usage
 Where:
 -h|--help		Displays this message hen exists.
 -C|--config		Specifies the config information for CyberARK, in JSON format.
-#-H|--host		Specifies the Nexpose console to connect to.
+-H|--host		Specifies the Nexpose console to connect to.
 -s|--stale-days	Specifies the retention period.
 
 END
 	exit 0
 end
 
-# Expects a JSON decoded object in the following format:
-#{
-#  'aimproxy': '127.0.0.1',
-#  'username': 'Nexpose API user',
-#  'safe': 'Safe_Name',
-#  'appid': 'App_Name',
-#  'objectname': '',
-#}
-
-def get_cark_creds(config)
-	pass = %x{ssh root@#{config['aimproxy']} '/opt/CARKaim/sdk/clipasswordsdk GetPassword -p AppDescs.AppID=#{config['appid']} -p "Query=safe=#{config['safe']};Folder=#{config['folder']};object=#{config['objectname']}" -o Password'}
-	pass.chomp!
-	#puts "|#{pass}|"
-	return config['username'],pass
-end
-
-default_host = 'is-vmcrbn-p01***REMOVED***'
-default_user = 'sv-nexposegem'
+default_host = 'localhost'
+default_user = 'nxadmin'
 default_days = 90
 
 opts = GetoptLong.new(
@@ -79,8 +65,7 @@ else
 	# import the JSON config from the file
 	fileraw = File.read(conffile)
 	@config = JSON.parse(fileraw)
-	@user,@pass = get_cark_creds(@config)
-	#puts "|#{@user}|\n|#{@pass}|"
+	@user,@pass = Utils.get_cark_creds(@config)
 end
 
 
@@ -94,7 +79,7 @@ scheduledSites = Array.new
 	site = Nexpose::Site.load(@nsc, ss.id)
 	if site.schedules.any?
 		scheduledSites << ss.id
-	else 
+	else
 		puts "No scheduled scans for SiteID: #{ss.id} SiteName: #{ss.name}"
 	end
 end

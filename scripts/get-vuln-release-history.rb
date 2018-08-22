@@ -1,30 +1,48 @@
 #!/usr/bin/env ruby
 
 require 'pp'
+require 'json'
 require 'nexpose'
 require 'colorize'
-require 'highline/import'
+#require 'highline/import'
 
-default_host = 'nc1***REMOVED***'
-#default_port = 3780
-default_user = 'user'
+require_relative '../lib/utils'
+
+default_host = 'localhost'
+#default_user = 'user'
 
 verbose = false
 
-host = ask("Enter the server name (host) for Nexpose: ") { |q| q.default = default_host }
-user = ask("Enter your username to log on: ") { |q| q.default = default_user }
-pass = ask("Enter your password: ") { |q| q.echo = "*" }
+carkconf = "cark_conf.json"
+if File.exists?(carkconf)
+	fileraw = File.read(carkconf)
+	@config = JSON.parse(fileraw)
+	@user,@pass = Utils.get_cark_creds(@config)
+else
+	raise "Couldn't find the CyberARK config file.  Expected cark_conf.json."
+end
 
-@nsc = Nexpose::Connection.new(host, user, pass)
+#host = ask("Enter the server name (host) for Nexpose: ") { |q| q.default = default_host }
+#user = ask("Enter your username to log on: ") { |q| q.default = default_user }
+#pass = ask("Enter your password: ") { |q| q.echo = "*" }
+
+if @configp'nexposehost'].nil?
+  host = ask("Enter the server name (host) for Nexpose: ") { |q| q.default = default_host }
+else
+  host = @config['nexposehost']
+end
+
+@nsc = Nexpose::Connection.new(host, @user, @pass)
 @nsc.login
 at_exit { @nsc.logout }
 
+puts "Showing vulns added or updated in the last 90 days."
 today = DateTime.now
 before = today - 90
 print "Start: ".green
 print "#{before}".yellow
 print "  "
-print "Today: ".green 
+print "Today: ".green
 puts "#{today}".yellow
 
 vulns = @nsc.find_vulns_by_date(before, today)

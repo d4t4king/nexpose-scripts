@@ -56,7 +56,7 @@ module Utils
 			return 29
 		when 3..4 then
 			return 30
-		when 1..2 then 
+		when 1..2 then
 			return 31
 		when 0 then
 			return 32
@@ -168,7 +168,7 @@ module Utils
 		1       =>  32,
 		0       =>  32
 	}
-	
+
 	def Utils.calc_mask(l,u)
 		if l.nil? or u.nil?
 			raise "calc_mask() expects a lower and upper ip"
@@ -230,5 +230,11 @@ module Utils
 		end
 		return s2i
 	end
-end
 
+	def Utils.get_cark_creds(config)
+    pass = %x{ssh root@#{config['aimproxy']} '/opt/CARKaim/sdk/clipasswordsdk GetPassword -p AppDescs.AppID=#{config['appid']} -p "Query=safe=#{config['safe']};Folder=#{config['folder']};object=#{config['objectname']}" -o Password'}
+    pass.chomp!
+    #puts "|#{pass}|"
+    return config['username'],pass
+	end
+end

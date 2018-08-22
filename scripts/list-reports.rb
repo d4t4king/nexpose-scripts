@@ -1,18 +1,33 @@
 #!/usr/bin/env ruby
 
 require 'pp'
+require 'json'
 require 'colorize'
 require 'nexpose'
 require 'highline/import'
 
-default_host = 'is-vmcrbn-p01***REMOVED***'
-#default_port = 3780
-default_user = 'sv-nexposegem'
+require_relative '../lib/utils'
+
+default_host = 'localhost'
+default_user = 'nxadmin'
 default_format = 'pdf'
 
-host = ask("Enter the server name (host) for Nexpose: ") { |q| q.default = default_host }
-user = ask("Enter your username to log on: ") { |q| q.default = default_user }
-pass = ask("Enter your password: ") { |q| q.echo = "*" }
+cark = 'cark_conf.json'
+if File.exists?(cark)
+	fileraw = File.read(cark)
+	@config = JSON.parse(fileraw)
+	user,pass = Utils.get_cark_creds(@config)
+else
+	raise "Couldn't find the CyberARK config file."
+end
+
+if @config['nexposehost'].nil?
+	host = ask("Enter the server name (host) for Nexpose: ") { |q| q.default = default_host }
+else
+	host = @config['nexposehost']
+end
+#user = ask("Enter your username to log on: ") { |q| q.default = default_user }
+#pass = ask("Enter your password: ") { |q| q.echo = "*" }
 
 @nsc = Nexpose::Connection.new(host, user, pass)
 @nsc.login

@@ -10,14 +10,27 @@ require 'ipaddr'
 require_relative '../lib/utils'
 require_relative '../lib/scanlog'
 
-default_host = 'nc1***REMOVED***'
-#default_port = 3780
+default_host = 'localhost'
 default_user = 'user'
 default_ip = '10.0.0.1'
 
-host = ask("Enter the server name (host) for Nexpose: ") { |q| q.default = default_host }
-user = ask("Enter your username to log on: ") { |q| q.default = default_user }
-pass = ask("Enter your password: ") { |q| q.echo = "*" }
+cark = 'cark_conf.json'
+if File.exists?(cark)
+	fileraw = File.read(cark)
+	@config = JSON.parse(fileraw)
+	user,pass = Utils.get_cark_creds(@config)
+else
+	raise "Unable to find CyberARK conf file."
+end
+
+if @config['nexposehost'].nil?
+	host = ask("Enter the server name (host) for Nexpose: ") { |q| q.default = default_host }
+else
+	host = @config['nexposehost']
+end
+
+#user = ask("Enter your username to log on: ") { |q| q.default = default_user }
+#pass = ask("Enter your password: ") { |q| q.echo = "*" }
 check_ip = ask("Enter the IP address to check: ") { |q| q.default = default_ip }
 
 check_iprobj = Nexpose::IPRange.new("#{check_ip}/32")

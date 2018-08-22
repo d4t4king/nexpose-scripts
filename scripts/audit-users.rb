@@ -8,6 +8,8 @@ require "colorize"
 require "getoptlong"
 require "highline/import"
 
+require_relative '../lib/utils'
+
 # returns a has of arrays containing userid (k)
 # and an array of siteids (v) the user can access
 def pop_user_sites(conn)
@@ -80,13 +82,6 @@ END
 	exit 0
 end
 
-def get_cark_creds(config)
-    pass = %x{ssh root@#{config['aimproxy']} '/opt/CARKaim/sdk/clipasswordsdk GetPassword -p AppDescs.AppID=#{config['appid']} -p "Query=safe=#{config['safe']};Folder=#{config['folder']};object=#{config['objectname']}" -o Password'}
-    pass.chomp!
-    #puts "|#{pass}|"
-    return config['username'],pass
-end
-
 default_host = "is-vmcrbn-p01***REMOVED***"
 default_user = "sv-nexposegem"
 default_format = "pdf"
@@ -141,7 +136,7 @@ if conffile.nil?
 else
 	fileraw = File.read(conffile)
 	@config = JSON.parse(fileraw)
-	@user,@pass = get_cark_creds(@config)
+	@user,@pass = Utils.get_cark_creds(@config)
 end
 
 @nsc = Nexpose::Connection.new(@host, @user, @pass)

@@ -6,18 +6,31 @@ require 'nexpose'
 require 'colorize'
 require 'highline/import'
 
+require_relative '../lib/utils'
+
 default_host = 'localhost'
-#default_port = 3780
-default_user = 'user'
+default_user = 'nxadmin'
 default_file = '/tmp/scan_history_dump.csv'
 
-host = ask("Enter the server name (host) for Nexpose: ") { |q| q.default = default_host }
-#port = ask("Enter the port for Nexpose: ") { |q| q.default = default_port.to_s }
-user = ask("Enter the username: ") { |q| q.default = default_user }
-pass = ask("Enter the password: ") { |q| q.echo = '*' }
+cark = 'cark_conf.json'
+if File.exists?(cark)
+	fileraw = File.read(cark)
+	@config = JSON.parse(fileraw)
+	user,pass = Utils.get_cark_creds(@config)
+else
+	raise "Unable to find CyberARK conf file."
+end
+
+if @config['nexposehost'].nil?
+	host = ask("Enter the server name (host) for Nexpose: ") { |q| q.default = default_host }
+else
+	host = @config['nexposehost']
+end
+
+#user = ask("Enter the username: ") { |q| q.default = default_user }
+#pass = ask("Enter the password: ") { |q| q.echo = '*' }
 outfile = ask("Enter the path to write out the results: ") { |q| q.default = default_file }
 
-#@nsc = Nexpose::Connection.new(host, port, user, pass)
 @nsc = Nexpose::Connection.new(host, user, pass)
 @nsc.login
 
@@ -39,7 +52,7 @@ rows = Array.new
 		engine = ''
 		if scan.engine_id == -1
 			engine = 'Pool or Error'
-		else 
+		else
 			eng = Nexpose::Engine.load(@nsc, scan.engine_id)
 			engine = eng.name
 		end
