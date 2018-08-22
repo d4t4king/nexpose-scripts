@@ -10,7 +10,7 @@ require 'ipaddr'
 require_relative '../lib/utils'
 require_relative '../lib/scanlog'
 
-default_host = 'nc1***REMOVED***'
+default_host = 'localhost'
 #default_port = 3780
 default_user = 'user'
 default_ip = '10.0.0.1'
@@ -76,7 +76,7 @@ my_sites = []
 					if targ.from == check_ip
 						puts "Looks like #{check_ip} is a target in range #{targ.from} - #{targ.to} for site #{site.name}.".light_green
 					end
-				end						
+				end
 			elsif targ.is_a?(Nexpose::HostName)
 				#puts "Is a host name.".magenta
 				begin
@@ -97,4 +97,3 @@ my_sites = []
 		end
 	end
 end
-
