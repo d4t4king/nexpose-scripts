@@ -17,6 +17,8 @@ Where:
 --verbose|-v		Displays more output.
 --input|-i			Specifies the full path to the input file.
 
+end
+
 END
 	exit 0
 end
@@ -29,7 +31,7 @@ opts = GetoptLong.new(
 
 @help = false
 @verbose = false
-@input = ''
+@input = nil
 
 opts.each do |opt,arg|
 	case opt
@@ -45,6 +47,7 @@ opts.each do |opt,arg|
 end
 
 usage if @help
+
 print "Verbose is "
 if @verbose
 	puts "on."
@@ -101,10 +104,9 @@ scan_log.entries.each do |entry|
 			next
 		else
 			puts "\t#{entry.message}"
-		end	
+		end
 	end
 end
 
 puts "Total: #{asset_creds.keys.size} Success: #{creds_success["true"]} Fail: #{creds_success["false"]}"
 puts "Percent success: #{(creds_success["true"] % asset_creds.keys.size)}%"
-
