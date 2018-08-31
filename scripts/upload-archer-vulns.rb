@@ -33,8 +33,8 @@ opts = GetoptLong.new(
 	['--help', '-h', GetoptLong::NO_ARGUMENT],
 	['--host', '-H', GetoptLong::REQUIRED_ARGUMENT],
 	['--config', '-c', GetoptLong::REQUIRED_ARGUMENT],
-	['--format', '-f', Getoptlog::REQUIRED_ARGUMENT],
-	['--vulns_list', '-v', GetoptLong::REQUIRED_ARGUMENT],
+	['--format', '-f', GetoptLong::REQUIRED_ARGUMENT],
+	['--vuln_list', '-v', GetoptLong::REQUIRED_ARGUMENT],
 )
 
 @host = nil
@@ -57,7 +57,7 @@ opts.each do |opt,arg|
 	when '--vuln_list'
 		@vulns_file = arg
 	else
-		raise ArgumentError "Unrecognized argument: #{0}"
+		raise "Unrecognized argument: #{opt}"
 	end
 end
 
@@ -72,7 +72,7 @@ if conffile.nil?
 	@vulns_file = ask("Enter the filename that contains the list of vulns to process: ") { |q| q.default = default_vuln_list }
 else
 	fileraw = File.read(conffile)
-	@config = JSON.parse(conffile)
+	@config = JSON.parse(fileraw)
 	@user,@pass = Utils.get_cark_creds(@config)
 end
 
