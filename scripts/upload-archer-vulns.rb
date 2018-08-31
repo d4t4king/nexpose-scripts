@@ -29,6 +29,14 @@ default_user = 'nxadmin'
 default_format = 'pdf'
 default_vuln_list = '/tmp/vuln.list'
 
+opts = GetoptLong.new(
+	['--help', '-h', GetoptLong::NO_ARGUMENT],
+	['--host', '-H', GetoptLong::REQUIRED_ARGUMENT],
+	['--config', '-c', GetoptLong::REQUIRED_ARGUMENT],
+	['--format', '-f', Getoptlog::REQUIRED_ARGUMENT],
+	['--vulns_list', '-v', GetoptLong::REQUIRED_ARGUMENT],
+)
+
 @host = nil
 @help = false
 @vulns_file = nil
