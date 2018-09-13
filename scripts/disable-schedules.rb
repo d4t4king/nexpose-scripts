@@ -1,16 +1,18 @@
 #!/usr/bin/env ruby
 
-require 'nexpose'
+require 'pp'
 require 'json'
+require 'nexpose'
 
-require_relative '../utils'
+require_relative '../lib/utils'
 
 cark = 'cark_conf.json'
 fileraw = File.read(cark)
 config = JSON.parse(fileraw)
-password = Utils.get_cark_creds(config)
+username, password = Utils.get_cark_creds(config)
 
-nsc = Nexpose::Connection(config['nexposehost'], config['username'], password)
+puts "Host: #{config['nexposehost']} User: #{username} Pass: #{password}"
+nsc = Nexpose::Connection.new(config['nexposehost'], username, password)
 at_exit { nsc.logout }
 
 nsc.login
@@ -21,4 +23,20 @@ else
 	exit 1
 end
 
-
+nsc.sites.each do |ssum|
+	site = Nexpose::Site.load(nsc, ssum.id)
+	#pp site
+	if site.schedules.size >= 1
+		puts "There is at least one schedule for site #{site.name}."
+		puts "\tTotal schedule: #{site.schedules.size}"
+		enabled = 0
+		site.schedules.each do |sched|
+			if sched.enabled
+				enabled += 1
+			end
+		end
+		puts "\t Total enabled: #{enabled}"	
+	else
+		puts "No schedule for site #{site.name}."
+	end
+end
