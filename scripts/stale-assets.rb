@@ -15,7 +15,7 @@ def usage
 #{$0} -h -C [JSON config]
 
 Where:
--h|--help		Displays this message hen exists.
+-h|--help		Displays this message then exists.
 -C|--config		Specifies the config information for CyberARK, in JSON format.
 -H|--host		Specifies the Nexpose console to connect to.
 -s|--stale-days	Specifies the retention period.
@@ -33,11 +33,13 @@ opts = GetoptLong.new(
 	['--host', '-H', GetoptLong::REQUIRED_ARGUMENT ],
 	['--stale-days', '-s', GetoptLong::REQUIRED_ARGUMENT ],
 	['--config', '-C', GetoptLong::REQUIRED_ARGUMENT ],
+	['--pretend', '-p', GetoptLong::NO_ARGUMENT ],
 )
 
 @help = false
 @config = nil
 conffile = nil
+@pretend = false
 
 opts.each do |opt,arg|
 	case opt
@@ -49,6 +51,8 @@ opts.each do |opt,arg|
 		conffile = arg
 	when '--stale-days'
 		@staleDays = arg
+	when '--pretend'
+		@pretend = true
 	else
 		raise ArgumentError "Unrecognized argument: #{opt}"
 	end
@@ -92,8 +96,10 @@ old_assets.each do |dev|
 	#pp dev
 	#gets
 	if scheduledSites.include?(dev.site_id)
-		puts "Stale: #{dev.ip.to_s.green} [ID: #{dev.id.to_s.yellow}] Site: #{dev.site_id.to_s.light_yellow} Last Scanned: #{dev.last_scan.to_s.magenta}"
+		site = Nexpose::Site.load(@nsc, dev.site_id)
+		puts "Stale: #{dev.ip.to_s.green} [ID: #{dev.id.to_s.yellow}] Site: #{site.name.light_yellow} Last Scanned: #{dev.last_scan.to_s.magenta}"
 		totalStale += 1
+		if @pretend; next; end
 		if dev.vuln_count == 0
 			ider = dev.name ? dev.name : dev.ip
 			puts "\tVulnerability count 0 for device #{ider.to_s.red}, deleting..."
@@ -104,4 +110,6 @@ old_assets.each do |dev|
 end
 
 puts "Total stale: #{totalStale.to_s.yellow}"
-puts "total stales deleted: #{deletedStale.to_s.magenta}"
+if not @pretend
+	puts "total stales deleted: #{deletedStale.to_s.magenta}"
+end
