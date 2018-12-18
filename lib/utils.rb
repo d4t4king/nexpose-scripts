@@ -173,12 +173,13 @@ module Utils
 		if l.nil? or u.nil?
 			raise "calc_mask() expects a lower and upper ip"
 		else
-			ipra = NetAddr.range(l,u)
-			#puts ipra.class.to_s.cyan
-			#puts ipra.size.to_s.cyan
+			laddr = NetAddr::IPv4.parse(l)
+			uaddr = NetAddr::IPv4.parse(u)
+			diff = uaddr.addr - laddr.addr
+			#mask = NetAddr::Mask32.parse(self.get_mask(diff))
 		end
 
-		return self.get_mask(ipra.size)
+		return NetAddr::Mask32.parse(self.get_mask(diff).to_s)
 		#if @mbit_dict.include?(ipra.size)
 		#	return @mbit_dict[ipra.size]
 		#else
