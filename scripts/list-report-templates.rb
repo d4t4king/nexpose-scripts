@@ -37,10 +37,10 @@ end
 
 at_exit { @nsc.logout }
 
-@nsc.reports.each do |rpt|
+@nsc.report_templatess.each do |rpt|
 	#if rpt.template_id =~ /(?:xml|scap)/i or rpt.name =~ /archer/i
 	#if rpt.template_id == 'basic-vulnerability-check-results' and rpt.name =~ /internal - vulnerability scan/i
 		#pp rpt
-		puts "#{rpt.config_id} #{rpt.name} #{rpt.template_id}"
+		puts "#{rpt.class} #{rpt.config_id} #{rpt.name} #{rpt.template_id}"
 	#end
 end
