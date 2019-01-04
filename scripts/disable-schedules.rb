@@ -33,9 +33,11 @@ nsc.sites.each do |ssum|
 		site.schedules.each do |sched|
 			if sched.enabled
 				enabled += 1
+				sched.enabled = false
 			end
 		end
-		puts "\t Total enabled: #{enabled}"	
+		puts "\t Total enabled: #{enabled}"
+		site.save(nsc)	
 	else
 		puts "No schedule for site #{site.name}."
 	end
