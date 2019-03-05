@@ -8,7 +8,7 @@ require 'rest-client'
 user = 'sv-nexposegem'
 passwd = 'Sempra01'
 
-@nsc = Nexpose::Connection.new('is-vmcrbn-p01***REMOVED***', user, passwd)
+@nsc = Nexpose::Connection.new('is-vmcrbn-p01.example.com', user, passwd)
 @nsc.login
 
 at_exit { @nsc.logout }
@@ -22,7 +22,7 @@ puts "Got #{vulns.size} vulns for title."
 #pp vulns
 puts "First VulnID: #{vulns[0].id}"
 
-base_url  = 'https://is-vmcrbn-p01***REMOVED***:3780/api/3/'
+base_url  = 'https://is-vmcrbn-p01.example.com:3780/api/3/'
 
 url = "#{base_url}/vulnerability_checks/#{vulns[0].id}"
 resp = RestClient::Request.execute(method: :get, url: url, user: user, password: passwd, :verify_ssl => OpenSSL::SSL::VERIFY_NONE)

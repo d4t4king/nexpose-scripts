@@ -5,7 +5,7 @@ require 'colorize'
 require 'nexpose'
 require 'highline/import'
 
-default_host = 'nc1***REMOVED***'
+default_host = 'nc1.example.com'
 #default_port = 3780
 default_user = 'sv-nexposegem'
 

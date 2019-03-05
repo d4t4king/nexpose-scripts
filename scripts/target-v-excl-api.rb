@@ -61,7 +61,7 @@ site.included_addresses.each do |iaddr|
 			if iaddr.host =~ /.*\.sempra\.com/
 				ip = dns.getaddress(iaddr.to_s)
 			else
-				ip = dns.getaddress("#{iaddr.host}***REMOVED***")
+				ip = dns.getaddress("#{iaddr.host}.example.com")
 			end
 		rescue Resolv::ResolvError => rre
 			ip = "unresolved"

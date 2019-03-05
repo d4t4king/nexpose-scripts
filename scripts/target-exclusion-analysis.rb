@@ -46,7 +46,7 @@ sl.targets.each do |tar|
 	addr = ''
 	if tar =~ /[a-zA-Z0-9-]+/
 		begin
-			tar = "#{tar}***REMOVED***" unless tar =~ /.*\.sempra\.com/
+			tar = "#{tar}.example.com" unless tar =~ /.*\.sempra\.com/
 			addr = dns.getaddress(tar)
 		rescue Resolv::ResolvError => rre
 			addr = "unresolved"

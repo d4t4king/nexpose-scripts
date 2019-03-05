@@ -7,7 +7,7 @@ require 'highline/import'
 
 require_relative '../lib/utils'
 
-default_host = 'nc1***REMOVED***'
+default_host = 'nc1.example.com'
 default_user = 'sv-nexposegem'
 
 cark = 'cark_conf.json'

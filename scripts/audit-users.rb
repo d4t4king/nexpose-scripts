@@ -82,7 +82,7 @@ END
 	exit 0
 end
 
-default_host = "is-vmcrbn-p01***REMOVED***"
+default_host = "is-vmcrbn-p01.example.com"
 default_user = "sv-nexposegem"
 default_format = "pdf"
 default_action = "show"
@@ -238,15 +238,15 @@ when "mail"
 		next if u.is_disabled == true
 
 		Mail.defaults do
-			delivery_method :smtp, host: "smtp***REMOVED***", address: "smtp***REMOVED***", openssl_verify_mode: OpenSSL::SSL::VERIFY_NONE, verify: false
+			delivery_method :smtp, host: "smtp.example.com", address: "smtp.example.com", openssl_verify_mode: OpenSSL::SSL::VERIFY_NONE, verify: false
 		end
 
 		if id2logon[u.id] == 0
 			mail = Mail.new do
-				from		"tvm-no-reply@sempra.com"
+				from		"tvm-no-reply@example.com"
 				to			u.email
-				#to			"cheselton@sempra.com"
-				cc			"cheselton@sempra.com"
+				#to			"cheselton@example.com"
+				cc			"cheselton@example.com"
 				subject		"Account Never Logged In"
 				body		<<~HERE
 					You have an account (#{u.name}) on the Enterprise Rapid7 Nexpose console
@@ -266,10 +266,10 @@ when "mail"
 			dt = dt.new_offset("-08:00")
 			if (myNow - dt).to_i >= 365
 				mail = Mail.new do
-					from		"tvm-no-reply@sempra.com"
+					from		"tvm-no-reply@example.com"
 					to			u.email
-					#to			"cheselton@sempra.com"
-					cc			"cheselton@sempra.com"
+					#to			"cheselton@example.com"
+					cc			"cheselton@example.com"
 					subject		"Account Not Logged In Last Calendar Year"
 					body		<<~HERE
 						You have an account (#{u.name}) on the Enterprise Rapid7 Nexpose console
