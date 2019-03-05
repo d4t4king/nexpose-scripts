@@ -78,7 +78,7 @@ end
 f.close
 
 # now ftp the file to the server
-Net::FTP.open('***REMOVED***', 'scanexclusions\***REMOVED***', '***REMOVED***') do |ftp|
+Net::FTP.open('ftp.example.com', 'domain\user', 'securePassw0rd') do |ftp|
 	ftp.putbinaryfile(f, "/site/wwwroot/Data/#{File.basename(f)}")
 end
 
